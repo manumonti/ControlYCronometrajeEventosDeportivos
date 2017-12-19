@@ -1,0 +1,3 @@
+Lista de cambios librería Adafruit_PN532
+
+- El #define WIRE Wire es igual para todos, no discrimina arquitecturas. Esto es necesario para el funcionamiento del Genuino 101
