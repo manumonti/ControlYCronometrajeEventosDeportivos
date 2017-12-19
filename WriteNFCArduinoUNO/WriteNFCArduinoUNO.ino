@@ -1,19 +1,20 @@
 /****************************************************************************/
 /*
  * WriteNFCArduinoUNO
- * Created by Manuel Montenegro, December 16, 2017.
- * Developed for Manuel Montenegro Final Year Project. 
+ * Created by Manuel Montenegro, December 19, 2017.
+ * Developed by Manuel Montenegro for Final Year Project. 
  * 
- *  This sketch attempts to write blocks on Mifare Classic 1k NFC card using
- *  Arduino UNO.
+ *  This sketch attempts to write blocks on Mifare Classic 1k NFC card.
  *  
  *  Serial port works at 115200 baudrate because it's necessary print out the
  *  data and read from the Mifare card at the same time.
  *  
+ *  Compatible boards with this sketch: Arduino UNO and Intel Galileo.
+ *  
 */
 /****************************************************************************/
 
-#include <Adafruit_PN532.h> // TODO: change this library for self-made library
+#include <Adafruit_PN532_mod.h> // TODO: change this library for self-made library
 
 // In Adafruit PN532 Shield, IRQ pin is attached to digital pin 2
 #define PN532_IRQ   2
@@ -67,6 +68,7 @@ void loop() {
   // Maybe more than a character was send...
   while (Serial.available()) {
     Serial.read();
+    delay(1);
   }
 
   // Check if communication with the card is OK and retrieve card UID

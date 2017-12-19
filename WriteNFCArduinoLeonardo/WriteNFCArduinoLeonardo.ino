@@ -1,11 +1,10 @@
 /****************************************************************************/
 /*
- * WriteNFCArduinoUNO
- * Created by Manuel Montenegro, December 16, 2017.
- * Developed for Manuel Montenegro Final Year Project. 
+ * WriteNFCArduinoLeonardo
+ * Created by Manuel Montenegro, December 19, 2017.
+ * Developed by Manuel Montenegro for Final Year Project. 
  * 
- *  This sketch attempts to write blocks on Mifare Classic 1k NFC card using
- *  Arduino UNO.
+ *  This sketch attempts to write blocks on Mifare Classic 1k NFC card.
  *  
  *  Serial port works at 115200 baudrate because it's necessary print out the
  *  data and read from the Mifare card at the same time.
@@ -13,7 +12,7 @@
 */
 /****************************************************************************/
 
-#include <Adafruit_PN532.h> // TODO: change this library for self-made library
+#include <Adafruit_PN532_mod.h> // TODO: change this library for self-made library
 
 // In Adafruit PN532 Shield, IRQ pin is attached to digital pin 2
 #define PN532_IRQ   6
@@ -37,7 +36,7 @@ void setup() {
   // Setting serial port baudrate
   Serial.begin (115200);
 
-  // Wait until Serial port with PC is stablished (only necessary with Leonardo)
+  // Wait until Serial port with PC is stablished
   while (!Serial);
   
   // I2C initialization & reset the PN532 module
@@ -69,6 +68,7 @@ void loop() {
   // Maybe more than a character was send...
   while (Serial.available()) {
     Serial.read();
+    delay(1);
   }
 
   // Check if communication with the card is OK and retrieve card UID
@@ -92,7 +92,7 @@ void loop() {
     } else {
 
       // Write a single block in Mifare Classic 1k card
-      nfc.mifareclassic_WriteDataBlock (blockNumber+1, block);
+      nfc.mifareclassic_WriteDataBlock (blockNumber, block);
       
     }
 
