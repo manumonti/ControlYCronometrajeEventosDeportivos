@@ -2,7 +2,7 @@
 /*
  * WriteNFCArduino101
  * Created by Manuel Montenegro, December 19, 2017.
- * Developed by Manuel Montenegro for Final Year Project. 
+ * Developed by Manuel Montenegro Final Year Project. 
  * 
  *  This sketch attempts to write blocks on Mifare Classic 1k NFC card.
  *  
