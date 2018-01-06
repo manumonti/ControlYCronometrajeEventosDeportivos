@@ -1,13 +1,14 @@
 /****************************************************************************/
 /*
- * GenerateSHA256ArduinoUNO
- * Created by Manuel Montenegro, December 27, 2017.
- * Developed by Manuel Montenegro for Final Year Project. 
+ * GenerateSHA256HMAC
+ * Created by Manuel Montenegro, January 7, 2017.
+ * Developed for Manuel Montenegro Final Year Project. 
  * 
  *  This sketch generates a SHA256 Cryptographic hash from a string and 
  *  print the elapsed time during processing.
  *  
- *  Compatible boards with this sketch: Arduino UNO and Intel Galileo.
+ *  Compatible boards with this sketch: Arduino UNO, Arduino Leonardo and 
+ *  Intel Galileo.
 */
 /****************************************************************************/
 
@@ -22,13 +23,31 @@ const char data [] = "Lorem ipsum dolor sit amet";
 // Key used for HMAC
 const char key [] = "key";
 
+
+// Prints bytes array data in hex with leading zeroes
+void printHex ( uint8_t data [], uint8_t length ) {
+   for (int i=0; i<length; i++) {
+    if (data[i]<0x10) {
+      Serial.print("0");
+    }
+    Serial.print(data[i],HEX);
+    Serial.print(" ");
+   }
+   Serial.println();
+}
+
+
 void setup() {
+  // Open serial port
   Serial.begin(9600);
 
-  // Flush previous data in the serial port
+  // Don't start sketch if no device listening (necessary for Arduino Leonardo)
+  while (!Serial);
+
+  // Flush previous data in the serial port (necessary for Intel Galileo)
   Serial.println();
 
-  // Array where is going to be placed the HMAC
+  // Array where will be placed the HMAC
   uint8_t result [sha256.hashSize()];
 
   // Time at the beginning of the ciphering. For calculating the elapsed time
@@ -50,9 +69,7 @@ void setup() {
   Serial.println ();
 
   // Printing the calculated HMAC
-  for (int i = 0; i < sizeof(result); i++) {
-    Serial.print (result[i], HEX);
-  }
+  printHex ( result, sizeof(result) );
 
   //  Printing the elapsed time
   Serial.println();
