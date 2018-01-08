@@ -33,10 +33,26 @@
 //  Serial.println();
 //}
 
+uint8_t pk1 [32] = { 0xA6, 0x21, 0x0F, 0x6A, 0x4C, 0xD2, 0x8A, 0x83, 0x98, 0x6C, 0xB2, 0x28, 0x4D, 0x4A, 0xA3, 0xE4, 0x19, 0x86, 0xEE, 0xF1, 0x57, 0xBC, 0xF7, 0xE3, 0xB9, 0xE0, 0x9C, 0x8B, 0xFE, 0x8F, 0x2B, 0x63 };
+uint8_t pk2 [32] = { 0x0E, 0x41, 0xC8, 0xCE, 0x8A, 0xFF, 0x43, 0xBE, 0x66, 0xB9, 0x53, 0x8F, 0x99, 0x44, 0x5A, 0xEA, 0xE1, 0x77, 0x8A, 0x03, 0xE5, 0x3C, 0x7D, 0x45, 0x84, 0xC8, 0x3C, 0x85, 0xE2, 0x7A, 0x35, 0x08 };
+
+
 void printKey ( uint8_t key [32] ) {
  char tmp[64];
  bytesToHex(key,32,tmp );
  Serial.println(tmp);
+}
+
+void PrintHex(uint8_t *data, uint8_t length) // prints 8-bit data in hex with leading zeroes
+{
+     char tmp[16];
+       for (int i=0; i<length; i++) { 
+         //sprintf(tmp, "0x%.2X,",data[i]); 
+         sprintf(tmp, "%.2X",data[i]); 
+         Serial.print(tmp);
+         //Serial.print(" ");
+       }
+       Serial.println();
 }
 
 void PrintHex8(uint8_t *data, uint8_t length) // prints 8-bit data in hex with leading zeroes
@@ -51,7 +67,7 @@ void PrintHex8(uint8_t *data, uint8_t length) // prints 8-bit data in hex with l
        Serial.println();
 }
 
-void bytesToHex(uint8_t *data, uint8_t length,char tmp[]) // prints 8-bit data in hex
+void bytesToHex(uint8_t *data, uint8_t length,char tmp[]) // 
 {
  //char tmp[length*2+1];
  byte first ;
@@ -72,7 +88,33 @@ void bytesToHex(uint8_t *data, uint8_t length,char tmp[]) // prints 8-bit data i
  // Serial.println(tmp);
 }
 
+uint8_t hexdigit( char hex )
+{
+    return (hex <= '9') ? hex - '0' : 
+                          toupper(hex) - 'A' + 10 ;
+}
 
+uint8_t hexbyte( const char* hex )
+{
+    return (hexdigit(*hex) << 4) | hexdigit(*(hex+1)) ;
+}
+
+void hexToBytes(char data[], uint8_t length, uint8_t *tmp) // 
+{
+    //tmp = (uint8_t*)malloc(length);
+    for(int i = 0; i < length; i++) {
+      tmp[i] = hexbyte( &data[i] ) ;
+    }
+ 
+}
+
+void hexToBytes2(char data[], uint8_t length, uint8_t *tmp) // 
+{
+    for (int count = 0; count < length; count++) {
+        sscanf(data+count*2, "%2hhx", (char*)&tmp[count]);
+    }
+ 
+}
 // Update these with values suitable for your network.
 //byte mac[]    = {  0xDE, 0xED, 0xBA, 0xFE, 0xFE, 0xED };
 
@@ -99,24 +141,31 @@ void callback(char* topic, byte* payload, unsigned int length) {
  Serial.print("Mensaje recibido en el canal "); Serial.println(topic);
  if (strcmp(topic,"challenge")==0)
  {
-   Serial.println("Hemos recibido un PAYLOAD para hacer un HASH ");
+   Serial.println("Hemos recibido un PAYLOAD para hacer un HMAC ");
+   //Serial.println((char*)payload);
    uint8_t result [sha256.hashSize()];
-   sha256.resetHMAC(key, strlen(key));
-   sha256.update(payload, length);
-   sha256.finalizeHMAC(key, strlen(key), result, sizeof(result));
-     // Printing the calculated HMAC
-  for (int i = 0; i < sizeof(result); i++) {
-    Serial.print (result[i], HEX);
-  }
-  Serial.println();
- 
+   uint8_t payload_b [length];
+   hexToBytes2((char*)payload,length/2,payload_b);
+   PrintHex(payload_b,length/2);
+   sha256.resetHMAC(pk1, 32);
+   sha256.update(payload_b, length/2);
+   sha256.finalizeHMAC(pk1, 32, result, sizeof(result));
+  char hmac[64];
+  bytesToHex(result,32,hmac);
+  // Printing the calculated HMAC
+  Serial.println("Este es el HMAC que hemos calculado");
+  Serial.println(hmac);
+  client.publish("hmac/PEPE", hmac, 64);
+
+
+  
   // Allocate the correct amount of memory for the payload copy
-  byte* p = (byte*)malloc(length);
+  //byte* p = (byte*)malloc(length);
   // Copy the payload to the new buffer
-  memcpy(p,payload,length);
-  client.publish("hash/PEPE", p, length);
-  // Free the memory
-  free(p);
+  //memcpy(p,payload,length);
+  //client.publish("hmac/PEPE", p, length);
+  //Free the memory
+  //free(p);
  }
 }
 
@@ -141,10 +190,6 @@ void setup()
     Serial.print("."); 
   }
   Serial.println();
-
-
-  uint8_t pk1 [32] = { 0xA6, 0x21, 0x0F, 0x6A, 0x4C, 0xD2, 0x8A, 0x83, 0x98, 0x6C, 0xB2, 0x28, 0x4D, 0x4A, 0xA3, 0xE4, 0x19, 0x86, 0xEE, 0xF1, 0x57, 0xBC, 0xF7, 0xE3, 0xB9, 0xE0, 0x9C, 0x8B, 0xFE, 0x8F, 0x2B, 0x63 };
-  uint8_t pk2 [32] = { 0x0E, 0x41, 0xC8, 0xCE, 0x8A, 0xFF, 0x43, 0xBE, 0x66, 0xB9, 0x53, 0x8F, 0x99, 0x44, 0x5A, 0xEA, 0xE1, 0x77, 0x8A, 0x03, 0xE5, 0x3C, 0x7D, 0x45, 0x84, 0xC8, 0x3C, 0x85, 0xE2, 0x7A, 0x35, 0x08 };
 
   // Arrays for Diffie-Hellman keys
   uint8_t alice_k [32];
@@ -247,7 +292,7 @@ void setup()
   Serial.println( timeEnd - timeStart );
   Serial.println();
   
-  if (client.connect("arduinoClient2","try","try")) {
+  if (client.connect("arduinoClient","72709a72","89944f50c966485e")) {
      Serial.println("Conectado");
     client.publish("outTopic","hello world");
     client.publish("public_dh/PEPE",pub_key);

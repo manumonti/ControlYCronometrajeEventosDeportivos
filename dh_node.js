@@ -5,6 +5,7 @@ var crypto = require('crypto');
 var HashMap = require('hashmap');
 
 
+var random;
 
 var keys = new HashMap();
 
@@ -28,7 +29,7 @@ var pk1 = hexStringToByte('a6210f6a4cd28a83986cb2284d4aa3e41986eef157bcf7e3b9e09
 var sk2 = hexStringToByte('001eb892282978f30573dd3116b48fc0efe3cb37cc2d7b9c136340572a74d943');
 var pk2 = hexStringToByte('0e41c8ce8aff43be66b9538f99445aeae1778a03e53c7d4584c83c85e27a3508');
 
-var client = mqtt.connect('mqtt://try:try@broker.shiftr.io', {
+var client = mqtt.connect('mqtt://72709a72:89944f50c966485e@broker.shiftr.io', {
   clientId: 'javascript'
 });
 
@@ -36,14 +37,14 @@ client.on('connect', function(){
   console.log('client has connected!');
 
   client.subscribe('/public_dh/+');
-  client.subscribe('/hash/+');
+  client.subscribe('/hmac/+');
   // client.unsubscribe('/example');
 
 
   setInterval(function(){
-  	var random = randomValueHex(32) // value 'd5be8583137b'
+  	random = randomValueHex(32) // value 'd5be8583137b'
     client.publish('/challenge', random);
-  }, 2000);
+  }, 5000);
 });
 
 client.on('message', function(topic, message) {
@@ -57,10 +58,16 @@ client.on('message', function(topic, message) {
 	keys.set(name, byteToHexString(jout1));
 	//var jout2 = nacl.scalarMult(sk2, hexStringToByte(message.toString()));
 	//console.log (byteToHexString(jout2));
-  } else if (topic.substr(0,5) == "/hash")
+  } else if (topic.substr(0,5) == "/hmac")
   {
   	var name = topic.substr(6,topic.length);
-  	console.log('New HASH from '+ name +" : "+ message.toString());
+  	console.log('New HMAC from '+ name +" : "+ message.toString());
+
+	const hmac = crypto.createHmac('sha256', Buffer.from(keys.get(name), 'hex'));
+	hmac.update(Buffer.from(random, 'hex'));
+  	console.log('Local HMAC  ('+ name +") : "+ hmac.digest('hex'));
+  	console.log('Challenge : '+ random);
+
   }
 });
 
