@@ -1,14 +1,14 @@
 /****************************************************************************/
 /*
  * GenerateSHA256HMAC
- * Created by Manuel Montenegro, January 7, 2017.
+ * Created by Manuel Montenegro, January 8, 2017.
  * Developed for Manuel Montenegro Final Year Project. 
  * 
  *  This sketch generates a SHA256 Cryptographic hash from a string and 
  *  print the elapsed time during processing.
  *  
- *  Compatible boards with this sketch: Arduino UNO, Arduino Leonardo and 
- *  Intel Galileo.
+ *  Compatible boards with this sketch: Arduino UNO, Arduino Leonardo, Genuino 
+ *  101 and Intel Galileo.
 */
 /****************************************************************************/
 

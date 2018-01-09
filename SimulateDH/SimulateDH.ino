@@ -1,14 +1,14 @@
 /****************************************************************************/
 /*
  * SimulateDH
- * Created by Manuel Montenegro, January 7, 2017.
+ * Created by Manuel Montenegro, January 8, 2017.
  * Developed for Manuel Montenegro Final Year Project.
  * 
  *  This sketch simulates a Diffie-Hellman key exchange between two devices
  *  and prints the elapsed time during processing.
  *  
- *  Compatible boards with this sketch: Arduino UNO, Arduino Leonardo and 
- *  Intel Galileo.
+ *  Compatible boards with this sketch: Arduino UNO, Arduino Leonardo, Genuino 
+ *  101 and Intel Galileo.
 */
 /****************************************************************************/
 
