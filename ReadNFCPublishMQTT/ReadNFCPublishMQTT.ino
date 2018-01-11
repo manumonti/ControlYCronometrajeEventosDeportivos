@@ -42,7 +42,10 @@ uint8_t keyb[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
 // MAC and IP address of the network card
 byte mac[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
-byte ip[] = {192, 168, 2, 2};
+byte ip[] = {192, 168, 48, 238};
+byte gateway[] = {192, 168, 49, 252};
+byte dnsdir[] = {150, 214, 40, 11};
+byte subnet[] = {255, 255, 254, 0};
 
 
 void messageReceived (String &topic, String &payload) {
@@ -91,9 +94,9 @@ void setup() {
 
   nfc.SAMConfig();  // Configure the Secure Access Module of PN532
 
-  Ethernet.begin(mac, ip);                    // Ethernet connection initialization
-  mqttClient.begin("broker.shiftr.io", net);  // MQTT client initialization
-  mqttConnect ();                             // Connection to shiftr.io namespace
+  Ethernet.begin(mac, ip, dnsdir, gateway, subnet); // Ethernet connection initialization
+  mqttClient.begin("broker.shiftr.io", net);        // MQTT client initialization
+  mqttConnect ();                                   // Connection to shiftr.io namespace
   
 }
 
