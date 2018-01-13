@@ -1,7 +1,7 @@
 /****************************************************************************/
 /*
  * WriteNFC
- * Created by Manuel Montenegro, January 8, 2017.
+ * Created by Manuel Montenegro, January 12, 2017.
  * Developed by Manuel Montenegro Final Year Project. 
  * 
  *  This sketch attempts to write blocks on Mifare Classic 1k NFC card.
@@ -14,7 +14,7 @@
 */
 /****************************************************************************/
 
-#include <Adafruit_PN532_mod.h> // TODO: change this library for self-made library
+#include <PN532.h>
 
 // In Adafruit PN532 Shield, IRQ pin is attached to digital pin 2
 #define PN532_IRQ   2

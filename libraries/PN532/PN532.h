@@ -1,34 +1,21 @@
-/**************************************************************************/
-/*! 
-    @file     Adafruit_PN532.h
-    @author   Adafruit Industries
-	@license  BSD (see license.txt)
-	
-
-	This is a library for the Adafruit PN532 NFC/RFID breakout boards
-	This library works with the Adafruit NFC breakout 
-	----> https://www.adafruit.com/products/364
-	
-	Check out the links above for our tutorials and wiring diagrams 
-  These chips use SPI or I2C to communicate.
-	
-	Adafruit invests time and resources providing this open source code, 
-	please support Adafruit and open-source hardware by purchasing 
-	products from Adafruit!
-
-	@section  HISTORY
-
-  v2.0  - Refactored to add I2C support from Adafruit_NFCShield_I2C library.
-
-	v1.1  - Added full command list
-          - Added 'verbose' mode flag to constructor to toggle debug output
-          - Changed readPassiveTargetID() to return variable length values
-	
+/*********************************************************************************************/
+/*
+ * PN532 Arduino library
+ * Created by Manuel Montenegro, January 12, 2017.
+ * Developed for Manuel Montenegro Final Year Project. 
+ * 
+ *  This library is used to manage PN532 NFC module.
+ *
+ *  Only works with I2C connection. This library is based in Adafruit Arduino library with
+ *  lighten purposes because of memory Arduino UNO requeriments. 
+ *  (https://github.com/adafruit/Adafruit-PN532)
+ *  
+ *  This library is compatible with Adafruit PN532 shield and Elechouse NFC module V3
 */
-/**************************************************************************/
+/*********************************************************************************************/
 
-#ifndef ADAFRUIT_PN532_H
-#define ADAFRUIT_PN532_H
+#ifndef __PN532_H__
+#define __PN532_H__
 
 #if ARDUINO >= 100
  #include "Arduino.h"
@@ -153,11 +140,11 @@
 #define PN532_GPIO_P34                      (4)
 #define PN532_GPIO_P35                      (5)
 
-class Adafruit_PN532{
+class PN532{
  public:
-  Adafruit_PN532(uint8_t clk, uint8_t miso, uint8_t mosi, uint8_t ss);  // Software SPI
-  Adafruit_PN532(uint8_t irq, uint8_t reset);  // Hardware I2C
-  Adafruit_PN532(uint8_t ss);  // Hardware SPI
+  PN532(uint8_t clk, uint8_t miso, uint8_t mosi, uint8_t ss);  // Software SPI
+  PN532(uint8_t irq, uint8_t reset);  // Hardware I2C
+  PN532(uint8_t ss);  // Hardware SPI
   void begin(void);
   
   // Generic PN532 functions
