@@ -1,5 +1,0 @@
-Lista de cambios librería Adafruit_PN532
-
-- El #define WIRE Wire es igual para todos, no discrimina arquitecturas. Esto es necesario para el funcionamiento del Genuino 101
-
-- En bool Adafruit_PN532::waitready (uint16_t timeout) no quiero que se imprima todo el rato TIMEOUT
