@@ -1,7 +1,7 @@
 /*********************************************************************************************/
 /*
  * MASTER
- * Created by Manuel Montenegro, January 14, 2017.
+ * Created by Manuel Montenegro, January 15, 2017.
  * Developed for Manuel Montenegro Final Year Project. 
  * 
  *  This sketch sets up station devices by NFC. It assignes an identifier (ID) and a shared 
@@ -14,17 +14,21 @@
 */
 /*********************************************************************************************/
 
-#include <Curve25519.h>             // Diffie-Hellman library
 #include <RNG.h>                    // Random Number Generator library
-#include <EEPROM.h>                 // EEPROM management library
+#include <Curve25519.h>             // Diffie-Hellman library
 #include <P2P-PN532.h>              // NFC P2P library
 #include <PN532.h>                  // NFC library
+#include <EEPROM.h>                 // EEPROM management library
 #include <SerialInterface.h>        // Interface with the user by serial port and PC library
 
+#define KEY_SIZE            32      // Size in bytes of keys used
 #define NUM_STATIONS_ADDR   0       // EEPROM address where is saved the number of stations
 #define RNG_SEED_ADDR       1       // EEPROM address where is saved the seed for RNG
-#define FIRST_REC_ADDR      50      // EEPROM address where begins stations records
-#define STATION_REC_SIZE    5       // Size in bytes of each station record
+#define SK_ADDR             50      // EEPROM address where is saved secret key of the event
+#define FIRST_REC_ADDR      82      // EEPROM address where begins stations records
+#define STATION_REC_SIZE    33      // Size in bytes of each station record
+#define RX_BUF_MAX_SIZE     32      // Max size in bytes of message that MASTER can receive
+#define TX_BUF_MAX_SIZE     49      // Max size in bytes of message that MASTER can send
 #define RNG_APP_TAG         "master"// Name unique of this app for taking RNG seed
 
 P2PPN532 p2p;                       // Object that manages NFC P2P connection
@@ -32,8 +36,16 @@ SerialInterface serialInterface;    // Object that manages the user interface
 
 uint8_t choose;                     // User choose from serial menu
 uint8_t stationID;                  // ID of current station
-uint8_t challenge [4];              // Array for generating the challenge
+uint8_t challenge [16];             // Array for generating the challenge
 
+uint8_t masterPk [KEY_SIZE];        // Master Diffie-Hellman public key
+uint8_t masterSk [KEY_SIZE];        // Master Diffie-Hellman secret key
+
+uint8_t tx_buf [TX_BUF_MAX_SIZE];   // Buffer that will be sent
+uint8_t rx_buf [RX_BUF_MAX_SIZE];   // Buffer that will be received
+uint8_t rx_len;                     // Size of data received
+
+uint8_t flag;                       // Control flag for multiples purpouses
 
 // Sets up stations until it receives a finish command.
 void setUpStations ( ) {
@@ -47,16 +59,12 @@ void setUpStations ( ) {
 
     RNG.rand (challenge, sizeof(challenge));  // Generates the challenge for this station
 
-    uint8_t sended = false;
-    while (!sended) {
-      delay (100);                  // Waits PN532 is ready
-      sended = sendChallenge ();    // Send challenge to the station and chech ACK
-      Serial.println(sended);
-    }
-    
+    sendP2PChallenge ();      // Send challenge to the station
+
+    receiveP2P();             // Receives response to challenge and station public key
+
     uint8_t EEPROMaddr = FIRST_REC_ADDR + (STATION_REC_SIZE * stationID); // Address of this station
     EEPROM.update (EEPROMaddr, stationID);  // Writes the station ID in EEPROM
-    EEPROM.put (EEPROMaddr+1, challenge);   // Writes the challenge of this station in EEPROM
 
     // Ask for a new station or finish setup process 
     EEPROM [NUM_STATIONS_ADDR] += 1;
@@ -69,32 +77,57 @@ void setUpStations ( ) {
   
 }
 
-bool sendChallenge () {
-  uint8_t tx_buf [STATION_REC_SIZE];      // Buffer that will be sent
-  uint8_t rx_buf [50];                    // Buffer that will be received
-  uint8_t rx_len;                         // Size of data received
+
+// Send a challenge randomly generated
+void sendP2PChallenge () {
 
   // Make the buffer with station information
-  rx_buf[0] = stationID;                  
-  memcpy(&rx_buf[1], challenge, sizeof(challenge));
+  tx_buf[0] = stationID;            // Station identifier
+  memcpy(&tx_buf[1], challenge, sizeof(challenge)); // Challenge
+  memcpy(&tx_buf[17], masterPk, sizeof(masterPk));  // Master public key
 
-  uint8_t ok = false;
-  while (!ok) {
+  flag = false;
+  while (!flag) {
     if (p2p.P2PInitiatorInit()) {         // Waits until the station is detected
       if (p2p.P2PInitiatorTxRx(tx_buf, sizeof(tx_buf), rx_buf, &rx_len)) { // Waits data
-        ok = true;
+        flag = true;
+      }
+    }
+  }
+}
+
+
+// Receives station response to P2P Challenge
+void receiveP2P () {
+  flag = false;
+  while (!flag) {
+    if (p2p.P2PInitiatorInit()) {         // Waits until the station is detected
+      if (p2p.P2PInitiatorTxRx(0, 0, rx_buf, &rx_len)) { // Waits data
+        flag = true;
+
+
+
+
+  Serial.println(F("DEBUG: receive public key:"));
+  for (int i = 0; i < rx_len; i++) {
+    Serial.print(rx_buf[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
+
+
+
+
+        
       }
     }
   }
   
-  if ( (rx_len == 1) && (rx_buf [0] == true) ) {  // Check ACK
-    return true;
-  } else {                       
-    return false;
-  }
-
-  
 }
+
+
+
+
 
 
 
@@ -120,13 +153,24 @@ void loop() {
     // Erases information of previous events
     EEPROM.update (NUM_STATIONS_ADDR, 0); // Deletes the number of stations already setup
 
-    EEPROM.get (NUM_STATIONS_ADDR, stationID);  // Take the next station for setup
+    // Generates a key pair for this event and save Secret Key in EEPROM
+    Curve25519::dh1 (masterPk, masterSk); // Generates public and secret key for this event
+    EEPROM.put (SK_ADDR, masterSk);       // Saves master secret key in EEPROM
+
+    
+    EEPROM.get (NUM_STATIONS_ADDR, stationID);  // Take the next station ID for setup
     setUpStations ();             // Start stations setup mode
     
   } else if ( (choose == '2') ) { // The setup of event is going to continue...
 
     EEPROM.get (NUM_STATIONS_ADDR, stationID);  // Take the next station for setup
+
+    // Generates the master public key from EEPROM saved master secret key
+    EEPROM.get (SK_ADDR, masterSk); // Load from EEPROM master secret key
+    Curve25519::eval (masterPk, masterSk, 0); // Generates master public key
+    
     setUpStations ();               // Start stations setup mode
+
 
   } else {
     choose = serialInterface.introMenu ();  // Start interactive menu and return user choose
