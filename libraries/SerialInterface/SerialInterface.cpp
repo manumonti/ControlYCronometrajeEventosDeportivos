@@ -18,13 +18,14 @@ SerialInterface::SerialInterface () {}
 // Starts a interactive menu through serial port
 uint8_t SerialInterface::introMenu () {
 
-	Serial.println (F("\n\n\n\n --------------------------------------------"));
+	Serial.println (F("\n --------------------------------------------"));
 	Serial.println (F(" | MASTER device for setting up sport event |"));
 	Serial.println (F(" --------------------------------------------"));
 	Serial.println (F(" Please, send the option number of your choice"));
 	Serial.println (F(" What do you want to do?"));
 	Serial.println (F("   1. Set up and start a new event"));
-	Serial.println (F("   2. Continue setting up a event\n\n"));
+	Serial.println (F("   2. Continue setting up an event"));
+	Serial.println (F("   3. Read card\n"));
 
 	uint8_t userChoose;
 	while (!Serial.available());      // Waits until the user send the answer
