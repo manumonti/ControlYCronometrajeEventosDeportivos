@@ -17,6 +17,7 @@
 #include <Curve25519.h>             // Diffie-Hellman library
 #include <P2P-PN532.h>              // NFC P2P library
 #include <EEPROM.h>                 // EEPROM management library
+#include <RTClib.h>                 // Real Time Clock library
 
 #define KEY_SIZE            32      // Size in bytes of keys used
 #define STATION_ID_ADDR     0       // EEPROM address where is saved the station identifier
@@ -33,15 +34,11 @@ uint8_t masterPk_Shared [KEY_SIZE]; // Can have two values: Master public key & 
 
 P2PPN532 p2p;                       // Object that manages NFC P2P connection
 SHA256 sha256;                      // Object that manages HMAC & SHA256 functionalities
+RTC_DS3231 rtc;                     // Object that manages Real Time Clock
 
 
-// Sets up the station: assignes crypto keys, station identifier, etc.
-void setUpStation () {
-  
-  RNG.begin (RNG_APP_TAG, RNG_SEED_ADDR); // Save a new seed for generating random numbers
-
-  p2p.begin();                      // Configures & resets PN532 module
-  p2p.SAMConfiguration();           // Configure the Secure Access Module of PN532 for P2P
+// Sets up the station when special card is readed
+void newSetUp () {
 
   Curve25519::dh1 (stationPk, stationSk_HMAC); // Gen public-secret keys for this station
   
@@ -49,8 +46,30 @@ void setUpStation () {
 
 
 // Starts NFC P2P communication with Master for setting up the station
-void P2PCommunication () {
+void P2PSetUpCommunication () {
 
+  uint32_t realTime;                // For storing received real time
+
+  receiveP2PChallenge ();           // Receives challenge message and parse its data
+
+  // Adjust RTC with 4 firsts bytes from received challenge
+  memcpy (&realTime, challenge, sizeof(realTime));// Challenge contains the real time
+  rtc.adjust(realTime);             // Adjusts the RTC
+  
+  // Calculates the Diffie-Hellman shared key. This will be the station key
+  Curve25519::dh2 (masterPk_Shared, stationSk_HMAC);// Generates DH key and erases secret key
+  EEPROM.put (STATION_ID_ADDR, stationID);          // Saves in EEPROM the station ID
+  EEPROM.put (SHARED_KEY_ADDR, masterPk_Shared);    // Saves in EEPROM the shared key
+
+  HMACsetup();                      // Calculates HMAC and stores it in stationSk_HMAC
+
+  sendP2Presponse();                // Sends HMAC & Station public key to master
+    
+}
+
+// Waits until receives challenge message. Parse the data received in this message
+void receiveP2PChallenge () {
+  
   uint8_t rx_buf [RX_BUF_MAX_SIZE]; // Buffer that will be received
   uint8_t rx_len;                   // Size of data received
   uint8_t flag;                     // Control flag
@@ -66,20 +85,9 @@ void P2PCommunication () {
     }
   }
   
-
   stationID = rx_buf[0];            // Station identifier
   memcpy (challenge, &rx_buf[1], sizeof(challenge));  // Challenge
   memcpy (masterPk_Shared, &rx_buf[17], sizeof(masterPk_Shared));  // Master public key
-
-  // Calculates the Diffie-Hellman shared key. This will be the station key
-  Curve25519::dh2 (masterPk_Shared, stationSk_HMAC);// Generates DH key and erases secret key
-  EEPROM.put (STATION_ID_ADDR, stationID);          // Saves in EEPROM the station ID
-  EEPROM.put (SHARED_KEY_ADDR, masterPk_Shared);    // Saves in EEPROM the shared key
-
-  HMACsetup();                      // Calculates HMAC and stores it in stationSk_HMAC
-
-  sendP2Presponse();                // Sends HMAC & Station public key to master
-    
 }
 
 // Calculates HMAC of stationID, challenge & station public key & stores it in stationSk_HMAC
@@ -162,11 +170,19 @@ void sendP2Presponse () {
 
 void setup() {
   Serial.begin (115200);            // Sets up serial port baudrate
-  setUpStation();                   // Init setup mode
+  
+  RNG.begin (RNG_APP_TAG, RNG_SEED_ADDR); // Save a new seed for generating random numbers
+
+  rtc.begin();                      // Inits rtc object
+
+  p2p.begin();                      // Configures & resets PN532 module
+  p2p.SAMConfiguration();           // Configure the Secure Access Module of PN532 for P2P
+  newSetUp();                       // Init setup mode
+  
 }
 
 void loop() {
   
-  P2PCommunication();
+  P2PSetUpCommunication();
 
 }
