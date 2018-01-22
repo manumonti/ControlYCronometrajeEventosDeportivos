@@ -1,13 +1,15 @@
 /*********************************************************************************************/
 /*
  * Serial interface Arduino library
- * Created by Manuel Montenegro, January 13, 2017.
+ * Created by Manuel Montenegro, January 20, 2017.
  * Developed for Manuel Montenegro Final Year Project. 
  * 
- *  This library is used to establish a communication with PC by serial port and allows users 
- *	to interact with Arduino easily. Serial interface is an abstraction opened to be implemented.
- *	This library is only a simple implemention.
+ *  This library is used for establishing a communication with PC by serial port and allows
+ *	users to interact with Arduino easily. Serial interface is an abstraction opened to be 
+ *	implemented. This library is only a simple implementation.
  *
+ *	The use of this library is compatible with any serial port monitor, like Serial Monitor of
+ *	Arduino IDE, GoSerial (Mac) or Putty (Windows).
 */
 /*********************************************************************************************/
 
