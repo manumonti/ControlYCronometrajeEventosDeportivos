@@ -1,12 +1,12 @@
 /*********************************************************************************************/
 /*
  * PN532 Arduino library
- * Created by Manuel Montenegro, January 12, 2017.
+ * Created by Manuel Montenegro, January 24, 2017.
  * Developed for Manuel Montenegro Final Year Project. 
  * 
  *  This library is used to manage PN532 NFC module.
  *
- *  Only works with I2C connection. This library is based in Adafruit Arduino library with
+ *  Only works with I2C connection. This library is based on Adafruit Arduino library with
  *  lighten purposes because of memory Arduino UNO requeriments. 
  *  (https://github.com/adafruit/Adafruit-PN532)
  *  
@@ -168,15 +168,6 @@ class PN532{
   uint8_t mifareclassic_WriteDataBlock (uint8_t blockNumber, uint8_t * data);
   uint8_t mifareclassic_FormatNDEF (void);
   uint8_t mifareclassic_WriteNDEFURI (uint8_t sectorNumber, uint8_t uriIdentifier, const char * url);
-  
-  // Mifare Ultralight functions
-  uint8_t mifareultralight_ReadPage (uint8_t page, uint8_t * buffer);
-  uint8_t mifareultralight_WritePage (uint8_t page, uint8_t * data);
-
-  // NTAG2xx functions
-  uint8_t ntag2xx_ReadPage (uint8_t page, uint8_t * buffer);
-  uint8_t ntag2xx_WritePage (uint8_t page, uint8_t * data);
-  uint8_t ntag2xx_WriteNDEFURI (uint8_t uriIdentifier, char * url, uint8_t dataLen);
   
   // Help functions to display formatted text
   static void PrintHex(const byte * data, const uint32_t numBytes);
