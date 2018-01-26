@@ -1,8 +1,8 @@
 /*********************************************************************************************/
 /*
  * STATION
- * Created by Manuel Montenegro, January 17, 2017.
- * Developed for Manuel Montenegro Final Year Project. 
+ * Created by Manuel Montenegro, January 26, 2017.
+ * Developed for Manuel Montenegro Bachelor Thesis. 
  * 
  *  This sketch manages each station of the platform.
  * 

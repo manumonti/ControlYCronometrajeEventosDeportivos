@@ -1,8 +1,9 @@
+
 /*********************************************************************************************/
 /*
  * MASTER
- * Created by Manuel Montenegro, January 21, 2017.
- * Developed for Manuel Montenegro Final Year Project. 
+ * Created by Manuel Montenegro, January 26, 2017.
+ * Developed for Manuel Montenegro Bachelor Thesis. 
  * 
  *  This sketch sets up station devices by NFC. It assignes an identifier (ID) and a shared 
  *  key using Diffie-Hellman algorithm. Persistent data is saved in EEPROM.
@@ -14,23 +15,30 @@
 */
 /*********************************************************************************************/
 
-#include <SerialInterface.h>        // Interface with the user by serial port and PC library
 #include <SetUpStations.h>          // Stations' setup library
+#include <PlayerCard.h>             // User's card management library
 
 uint8_t userChoose;                 // User choose from serial menu
-
-SerialInterface serialInterface;    // Manages the user's interface
 
 void setup() {
 
   Serial.begin (115200);            // Sets up serial port baudrate
   while (!Serial);                  // Waits until serial port is opened in PC
+  pinMode(LED_BUILTIN, OUTPUT);
 
 }
 
 void loop() {
+
+  userChoose = 0;
   
-  userChoose = serialInterface.introMenu ();  // Start interactive menu
+  while (!Serial.available());
+  delay(10);
+  userChoose = Serial.read();
+  while (Serial.available()) {
+    Serial.read();
+  }
+
 
   if (userChoose == '1') {
     MasterSetUpStations setUp;      // Manages the stations' setup
@@ -38,6 +46,9 @@ void loop() {
   } else if (userChoose == '2') {
     MasterSetUpStations setUp;      // Manages the stations' setup
     setUp.continuePreviousEvent (); // Continues a previous process of setting up
+  } else if (userChoose == '3') {
+    PlayerCard card;
+    card.format(); 
   }
 
 
