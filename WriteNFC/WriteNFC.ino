@@ -1,7 +1,7 @@
 /****************************************************************************/
 /*
  * WriteNFC
- * Created by Manuel Montenegro, January 12, 2017.
+ * Created by Manuel Montenegro, January 25, 2017.
  * Developed by Manuel Montenegro Final Year Project. 
  * 
  *  This sketch attempts to write blocks on Mifare Classic 1k NFC card.
@@ -29,7 +29,7 @@ uint8_t keyA[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 uint8_t keyB[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
 // This object is used to manage PN532 module
-Adafruit_PN532 nfc (PN532_IRQ, PN532_RESET);
+PN532 nfc (PN532_IRQ, PN532_RESET);
 
 
 
@@ -62,8 +62,8 @@ void loop() {
   uint8_t success;                          // Flag to check if there was an error with PN532 and card communication
   uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
   uint8_t uidLength;                        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
-  uint32_t blockNumber = 4;                 // block that is going to be written
-  uint8_t block [] = { 0x4D, 0x61, 0x6E, 0x75, 0x65, 0x6C, 0x4D, 0x6F, 0x6E, 0x74, 0x65, 0x6E, 0x65, 0x67, 0x72, 0x6F };
+  uint32_t blockNumber = 2;                 // block that is going to be written
+  uint8_t block [] = { 0x4D, 0x6F, 0x6E, 0x74, 0x65, 0x6E, 0x65, 0x67, 0x72, 0x6F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
   Serial.println ("Place a Mifare Classic card on the reader and press any key...");
   // Wait for user input before proceeding
