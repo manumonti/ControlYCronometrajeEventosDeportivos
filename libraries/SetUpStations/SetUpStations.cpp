@@ -22,22 +22,25 @@
 
 // Class constructor
 MasterSetUpStations::MasterSetUpStations () {
-
 	RNG.begin (RNG_APP_TAG_MASTER, RNG_SEED_ADDR); // Saves new seed for generating random
 	p2p.begin();						// Configures & resets PN532 module
 	p2p.SAMConfiguration();				// Configures Secure Access Module of PN532 for P2P
-	i2cEeprom = AT24C32(I2C_EEPROM_ADDR);	// Inits I2C EEPROM in RTC module in I2C address
+	i2cEeprom=AT24C32(I2C_EEPROM_ADDR);	// Inits I2C EEPROM in RTC module in I2C address
 	rtc.begin();						// Inits rtc object
-	if (rtc.lostPower()) {				// If time is not adjusted
-		rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));	// Adjust time to sketch was compilated
-	}
-
 }
 
 
 
 // Deletes all previous information and invokes the setup process
 void MasterSetUpStations::startNewEvent () {
+
+	uint8_t receivedDate [STRING_DATE_SIZE];
+	uint8_t receivedTime [STRING_TIME_SIZE];
+
+	usb.receiveDate(receivedDate);		// Receives actual time from serial port
+	usb.receiveTime(receivedTime);		// Receives actual time from serial port
+	
+	rtc.adjust(DateTime(receivedDate,receivedTime)); // Adjust time in RTC
 
 	// Erases information of previous events
 	EEPROM.update (NUM_STATIONS_ADDR, 0);	// Deletes the number of stations of previous event
@@ -69,103 +72,43 @@ void MasterSetUpStations::continuePreviousEvent () {
 // Sets up each station one by one until user ends the process.
 void MasterSetUpStations::setUpProcess () {
 
-	uint8_t choose;						// User's choose
+
+	uint8_t choice;						// User's choose
 	uint8_t flag;						// Control flag
 
-	choose = '1';							// Enters in the loop one time at least
+	choice = '1';						// Enters in the loop one time at least
 
-	while ( choose == '1' ) {			// If user chooses set up a new station...
+	while ( choice == '1' ) {			// If user chooses set up a new station...
 
+		choice = usb.sendStationIdReceiveChoice (stationID);
 
-		Serial.println(stationID);			// Starts setup interactive menu
-
-		while (!Serial.available());		// Waits until serial data is detected
-		delay(10);							// Waits serial buffer receives all data
-		choose = Serial.read();				// Saves user choice
-		while (Serial.available()) {		// Clean the serial buffer
-			Serial.read();
-		}
-
-		if (choose == '1') {
-			sendP2P ();						// Sends challenge to the station
-			receiveP2P();					// Receives station public key and HMAC
-			calculateSharedKey();			// Calculates keys of station & saves in I2C EEPROM
-			flag = checkHMAC();				// Checks HMAC received
+		if (choice == '1') {
+			sendP2P ();					// Sends challenge to the station
+			receiveP2P();				// Receives station public key and HMAC
+			calculateSharedKey();		// Calculates keys of station & saves in I2C EEPROM
+			flag = checkHMAC();			// Checks HMAC received
 
 			if ( flag ) {
 				// Ask for a new station or finish setup process 
 				EEPROM [NUM_STATIONS_ADDR] += 1;	// Update the # of stations in Arduino EEPROM
 				EEPROM.get (NUM_STATIONS_ADDR, stationID);	// Loads the next station number
+				usb.sendChar('1');
+			} else {
+				usb.sendChar ('0');
 			}
 
-			Serial.println(flag);
+			
 		} else {
-			Serial.println(choose);
+			usb.sendChar (choice);
 		}		
 	}
 
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	// Serial.println(stationID);			// Starts setup interactive menu
-
-	// while (!Serial.available());		// Waits until serial data is detected
-	// delay(10);							// Waits serial buffer receives all data
-	// choose = Serial.read();				// Saves user choice
-	// while (Serial.available()) {		// Clean the serial buffer
-	// 	Serial.read();
-	// }
-
-	// while ( choose == '1' ) {			// If user chooses set up a new station...
-
-	// 	sendP2P ();						// Sends challenge to the station
-	// 	receiveP2P();					// Receives station public key and HMAC
-	// 	calculateSharedKey();			// Calculates keys of station & saves in I2C EEPROM
-	// 	flag = checkHMAC();				// Checks HMAC received
-    
-	// 	if ( flag ) {
-	// 		// Ask for a new station or finish setup process 
-	// 		EEPROM [NUM_STATIONS_ADDR] += 1;	// Update the # of stations in Arduino EEPROM
-	// 		EEPROM.get (NUM_STATIONS_ADDR, stationID);	// Loads the next station number
-	// 	} 
-
-	// 	Serial.println(flag);			// Flag for indicating process' end to serial
-
-	// 	Serial.println(stationID);		// Starts setup interactive menu
-	// 	while (!Serial.available());	// Waits until serial data is detected
-	// 	delay(10);						// Waits serial buffer receives all data
-	// 	choose = Serial.read();			// Saves user choice
-	// 	while (Serial.available()) {	// Clean the serial buffer
-	// 	Serial.read();
-	// 	}
-
-	// }
-	// Serial.println(1);					// Flag for indicating process' end to serial interface
-
-
 /* Master device starts a communication with station by NFC P2P. Master sends the assigned 
   station ID, its public key and a challenge built with current time and random bytes.*/
-void MasterSetUpStations::sendP2P () {
+uint8_t MasterSetUpStations::sendP2P () {
 
 	uint8_t tx_buf [MASTER_TX_BUF_SIZE];// Buffer that will be sent
 	uint32_t timeStamp;					// Buffer that will contain time stamp
@@ -194,6 +137,7 @@ void MasterSetUpStations::sendP2P () {
 			}
 		}
 	}
+	return 1;
 
 }
 
@@ -212,8 +156,8 @@ void MasterSetUpStations::receiveP2P() {
 	while (!flag) {
 		if (p2p.P2PTargetInit()) {		// Waits until the station is detected
 			if (p2p.P2PTargetTxRx(0, 0, rx_buf, &rx_len)) {	// Waits data (public key)
-			memcpy (stationPk, rx_buf, rx_len);	// Copies station public key in memory
-			flag = true;      
+				memcpy (stationPk, rx_buf, rx_len);	// Copies station public key in memory
+				flag = true;      
 			}
 		}
 	}
