@@ -17,36 +17,29 @@
 
 #include <SetUpStations.h>          // Stations' setup library
 #include <PlayerCard.h>             // User's card management library
+#include <SerialInterface.h>        // Serial communication with PC library
 
-uint8_t userChoose;                 // User choose from serial menu
+uint8_t userChoice;                 // User choose from serial menu
+
+SerialInterface usb;
 
 void setup() {
 
   Serial.begin (115200);            // Sets up serial port baudrate
   while (!Serial);                  // Waits until serial port is opened in PC
-  pinMode(LED_BUILTIN, OUTPUT);
-
 }
 
 void loop() {
 
-  userChoose = 0;
+  userChoice = usb.receiveChoiceSendAck();
   
-  while (!Serial.available());
-  delay(10);
-  userChoose = Serial.read();
-  while (Serial.available()) {
-    Serial.read();
-  }
-
-
-  if (userChoose == '1') {
+  if (userChoice == '1') {
     MasterSetUpStations setUp;      // Manages the stations' setup
     setUp.startNewEvent ();         // Starts the process of setting up new stations
-  } else if (userChoose == '2') {
+  } else if (userChoice == '2') {
     MasterSetUpStations setUp;      // Manages the stations' setup
     setUp.continuePreviousEvent (); // Continues a previous process of setting up
-  } else if (userChoose == '3') {
+  } else if (userChoice == '3') {
     PlayerCard card;
     card.format(); 
   }
