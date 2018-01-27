@@ -32,6 +32,8 @@
 
 
 #include <PN532.h>						// NFC Arduino library for manages Mifare cards
+#include <SerialInterface.h>			// Serial communication with PC library
+
 
 #ifdef ARDUINO_AVR_UNO
 	#define PN532_IRQ   	2			// With Arduino UNO IRQ is tied to digital pin 2
@@ -43,9 +45,7 @@
 #define keyAType        	0			// Defines what mifare key type will be used in auth
 #define keyBType        	1 			// Defines what mifare key type will be used in auth
 #define MIFARE_BLOCK_SIZE	16			// Size of each block on Mifare Classic 1k Card
-#define CAT_SIZE			15			// Size in bytes of category field in card
-#define NAME_SIZE			16			// Size in bytes of player name field in card
-
+#define UID_LENGTH			4			// Length of UID in Mifare Classic 1k cards
 
 
 class PlayerCard {
@@ -56,6 +56,7 @@ public:
 
 private:
 	PN532 nfc;							// Object that manages PN532 module
+	SerialInterface usb;				// Serial Interface for communicating by USB port
 
 	// Key B for authenticates sectors of Mifare Classic Card
 	const uint8_t keyb [6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
@@ -63,7 +64,7 @@ private:
 	// Reads data in first card's sector
 	void readCardHeader (uint8_t *uid, uint8_t *nb, uint8_t *cat, uint8_t *name );
 	void writeCardHeader (uint8_t nb, uint8_t *cat, uint8_t *name);	// Writes card header info
-	void printHexString(uint8_t array[], unsigned int len); // Prints by serial a hex array
+
 };
 
 #endif

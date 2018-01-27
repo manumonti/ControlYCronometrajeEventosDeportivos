@@ -35,55 +35,32 @@ PlayerCard::PlayerCard () : nfc( PN532_IRQ, PN532_RESET) {
 // Erases previous information of card and set up it for a new event
 void PlayerCard::format () {
 
-	Serial.setTimeout(100);				// Max timeout that serial port waits for data
-
 	uint8_t userChoice;					// Choose of user in Serial interface
 	uint8_t uid[7];						// For storing card UID
 	uint8_t nextBlock;					// Next block to be written in card
 	uint8_t category [CAT_SIZE];		// Char array with player category
 	uint8_t name [NAME_SIZE];			// Char array with player name
-	uint8_t count;						// A simple counter
 
-	readCardHeader(uid, &nextBlock, category, name);	// Reads info from card header
+	readCardHeader(uid, &nextBlock, category, name);// Reads info from card header
 
-	// Sends card data by serial port
-	printHexString(uid, 4);				// Sends uid
-	Serial.println((char*)name);		// Sends user name
-	Serial.println((char*)category);	// Sends user category
+	usb.sendHexString(uid,UID_LENGTH);	// Sends the UID of user's card
+	usb.sendString (name);				// Sends user's name
+	usb.sendString (category);			// Sends user's category
 
-	while (!Serial.available());		// Waits until serial data is detected
-	delay(10);							// Waits serial buffer receives all data
-	userChoice = Serial.read();			// Saves user choice
-	while (Serial.available()) {		// Clean the serial buffer
-		Serial.read();
-	}
+	userChoice = usb.receiveChoice();	// Saves user choice
 
 	// If user wants to change name and category of card...
 	if (userChoice == '1') {		
-		// Reads new user name
-		while (!Serial.available());		// Waits until serial data is detected
-		delay(10);							// Waits serial buffer receives all data
-		count = Serial.readBytes(name, NAME_SIZE-1);	// Read user name and saves it
-		name[count]='\0';					// Put null terminated
-		while (Serial.available()) {		// Clean the serial buffer
-			Serial.read();
-		}
+		
+		usb.receiveName (name);			// Reads new user name
+		usb.receiveCategory (category);	// Reads new user category
 
-		// Reads new user category
-		while (!Serial.available());		// Waits until serial data is detected
-		delay(10);							// Waits serial buffer receives all data
-		count = Serial.readBytes (category, CAT_SIZE-1);// Read user category and saves it
-		category[count]='\0';				// Put null terminated
-		while (Serial.available()) {		// Clean the serial buffer
-			Serial.read();
-		}
-
-		nextBlock = 4;						// In formatted card, first block is 4
+		nextBlock = 4;					// In formatted card, first block is 4
 		writeCardHeader (nextBlock, category, name);	// Writes the Card Header
 	
 	} else if (userChoice == '2') {
 		
-		nextBlock = 4;						// In formatted card, first block is 4
+		nextBlock = 4;					// In formatted card, first block is 4
 		writeCardHeader (nextBlock, category, name);	// Writes the Card Header
 	
 	}
@@ -104,7 +81,7 @@ void PlayerCard::readCardHeader (uint8_t *uid, uint8_t *nb, uint8_t *cat, uint8_
 	success = nfc.readPassiveTargetID (PN532_MIFARE_ISO14443A, uid, &uidLength);
 
 	// Checks if this is a Mifare Classic Card (UID length is 4)
-	if (success && (uidLength == 4)) {
+	if (success && (uidLength == UID_LENGTH)) {
 
 		// Authenticates the block's sector
     	if ( nfc.mifareclassic_AuthenticateBlock (uid, uidLength, currentblock, keyBType, keyb) ) {
@@ -147,7 +124,7 @@ void PlayerCard::writeCardHeader (uint8_t nb, uint8_t *cat, uint8_t *name) {
 	success = nfc.readPassiveTargetID (PN532_MIFARE_ISO14443A, uid, &uidLength);
 
 	// Checks if this is a Mifare Classic Card (UID length is 4)
-	if (success && (uidLength == 4)) {
+	if (success && (uidLength == UID_LENGTH)) {
 
 		// Authenticates the block's sector
     	if ( nfc.mifareclassic_AuthenticateBlock (uid, uidLength, currentBlock, keyBType, keyb) ) {
@@ -164,19 +141,4 @@ void PlayerCard::writeCardHeader (uint8_t nb, uint8_t *cat, uint8_t *name) {
 		}
 	}
 
-}
-
-
-// Auxiliar function: Prints a hexadecimal array in the correct way
-void PlayerCard::printHexString(uint8_t array[], unsigned int len) {
-	char buffer [(len*2)+1];
-    for (unsigned int i = 0; i < len; i++) {
-        byte nib1 = (array[i] >> 4) & 0x0F;
-        byte nib2 = (array[i] >> 0) & 0x0F;
-        buffer[i*2+0] = nib1  < 0xA ? '0' + nib1  : 'A' + nib1  - 0xA;
-        buffer[i*2+1] = nib2  < 0xA ? '0' + nib2  : 'A' + nib2  - 0xA;
-    }
-    buffer[len*2] = '\0';
-
-    Serial.println(buffer);
 }
