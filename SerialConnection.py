@@ -19,6 +19,7 @@ import sys
 
 # Main function. This will execute at the beginning of the process
 def main():
+
 	# Serial connection with Arduino parameters
 	port = '/dev/cu.usbmodem1431'
 	baudrate = 115200
@@ -28,9 +29,7 @@ def main():
 	# Waits for stablish connection
 	time.sleep(2)
 
-
 	introMenu(arduino);
-
 
 	arduino.close();
 
@@ -51,16 +50,29 @@ def introMenu (arduino):
 		print "   2. Continue setting up an event"
 		print "   3. Clean card"
 		print "   4. Read card"
+		print "   5. Generate master card"
 		print "   0. Close\n"
 
 		choice = raw_input("Introduce your choice: ")
 		arduino.write(bytes(choice))
 
-		if choice == '1' or choice == '2':
-			setupMenu(arduino)
+		ack = arduino.readline().rstrip()
 
-		elif choice == '3':
-			formatMenu(arduino)
+		if ack == '1':
+
+			if choice == '1':
+
+				# Send the time and date
+				arduino.write(bytes(time.strftime("%b %d %Y")))
+				arduino.write(bytes(time.strftime("%H:%M:%S")))
+
+				setupMenu(arduino)
+
+			elif choice == '2':
+				setupMenu(arduino)
+
+			elif choice == '3':
+				formatMenu(arduino)
 
 
 
@@ -71,6 +83,7 @@ def setupMenu (arduino):
 
 	while choice == '1':
 
+		# Read the station ID
 		station = arduino.readline().rstrip()
 
 		print "\n Put station #%s on card reader" % station
@@ -81,9 +94,9 @@ def setupMenu (arduino):
 		choice = raw_input("Introduce your choice: ")
 		arduino.write(bytes(choice))
 
-		end = arduino.readline().rstrip()
+		ack = arduino.readline().rstrip()
 
-		if end == '0':
+		if ack == '0':
 			print "Error with Station. Reset it and try again"
 
 
@@ -110,7 +123,7 @@ def formatMenu(arduino):
 	print "   2. Format card with same name and category"
 	print "   3. Don't do anything"
 
-	# Asks user for the choice
+	# Ask user for the choice
 	choice = raw_input("Introduce your choice: ")
 	arduino.write(bytes(choice))
 
