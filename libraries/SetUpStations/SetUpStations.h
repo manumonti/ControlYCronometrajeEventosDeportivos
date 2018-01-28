@@ -1,7 +1,7 @@
 /*********************************************************************************************/
 /*
  * Stations Set Up Arduino library
- * Created by Manuel Montenegro, January 24, 2017.
+ * Created by Manuel Montenegro, January 28, 2017.
  * Developed for Manuel Montenegro Bachelor Thesis. 
  * 
  *  This library is used for setting up the stations of the platform before a sport event.
@@ -35,6 +35,8 @@
 #include <P2P-PN532.h>					// NFC P2P library
 #include <SerialInterface.h>			// Serial communication with PC library
 
+
+#define SETUP_TIMEOUT		30			// Max. time in seconds for start station setup
 #define STRING_TIME_SIZE	8			// Size in bytes of time in format hh:mm:ss
 #define STRING_DATE_SIZE	11			// Size in bytes of date in format mmm dd yyyy
 #define TIME_SIZE			4			// Size in bytes of clock time
@@ -100,7 +102,7 @@ private:
 	uint8_t stationSk_HMAC [KEY_SIZE];	// Station Diffie-Hellman secret key or HMAC
 	uint8_t masterPk_Shared[KEY_SIZE];	// Can have two values: Master public key & shared key
 
-	void receiveP2P();					// Waits until station receives challenge message.
+	uint8_t receiveP2P();				// Waits until receivING challenge message or timeout
 	void calculateHMAC();				// Calculates data received HMAC & station public key
 	void sendP2P();						// Station sends to Master its public key & HMAC
 

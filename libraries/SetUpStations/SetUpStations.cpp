@@ -1,7 +1,7 @@
 /*********************************************************************************************/
 /*
  * Stations Set Up Arduino library
- * Created by Manuel Montenegro, January 24, 2017.
+ * Created by Manuel Montenegro, January 28, 2017.
  * Developed for Manuel Montenegro Bachelor Thesis. 
  * 
  *  This library is used for setting up the stations of the platform before a sport event.
@@ -219,12 +219,18 @@ uint8_t MasterSetUpStations::checkHMAC () {
 
 }
 
+
+
+
+
+
+
 // StationNewSetUp class methods --------------------------------------------------------------
 
 // Class constructor
 StationNewSetUp::StationNewSetUp () {
 
-	rtc.begin();						// Inits rtc object
+	rtc.begin();						// Inits Real Time Clock hardware
 	p2p.begin();						// Configures & resets PN532 module
 	p2p.SAMConfiguration();				// Configure the Secure Access Module of PN532 for P2P
 	RNG.begin (RNG_APP_TAG_STATI, RNG_SEED_ADDR);	// Saves new seed for generating random
@@ -238,43 +244,59 @@ void StationNewSetUp::startNewSetUp () {
 
 	uint32_t realTime;					// For storing received real time
 
-	receiveP2P ();						// Receives setup message and parse its data
+	// If MASTER setup process is detected before timeout
+	if ( receiveP2P () ) {				// Receives setup message and parse its data
 
-	// Adjust RTC with the 4 firsts bytes from received challenge
-	memcpy (&realTime, challenge, sizeof(realTime));// Challenge contains the real time
-	rtc.adjust(realTime);				// Adjusts the RTC
+		// Adjust RTC with the 4 firsts bytes from received challenge
+		memcpy (&realTime, challenge, sizeof(realTime));// Challenge contains the real time
+		rtc.adjust(realTime);			// Adjusts the RTC
 
-	// Calculates the Diffie-Hellman shared key. This will be the station key
-	Curve25519::dh2 (masterPk_Shared, stationSk_HMAC);	// Generates DH key & erases secret key
-	EEPROM.put (STATION_ID_ADDR, stationID);			// Saves in EEPROM the station ID
-	EEPROM.put (SHARED_KEY_ADDR, masterPk_Shared);		// Saves in EEPROM the shared key
+		// Calculates the Diffie-Hellman shared key. This will be the station key
+		Curve25519::dh2 (masterPk_Shared, stationSk_HMAC);	// Generates DH key & erases secret key
+		EEPROM.put (STATION_ID_ADDR, stationID);			// Saves in EEPROM the station ID
+		EEPROM.put (SHARED_KEY_ADDR, masterPk_Shared);		// Saves in EEPROM the shared key
 
-	calculateHMAC ();					// Calculates HMAC & saves it in stationSk_HMAC
-  
-	sendP2P();							// Sends HMAC & Station public key to master
+		calculateHMAC ();				// Calculates HMAC & saves it in stationSk_HMAC
+	  
+		sendP2P();						// Sends HMAC & Station public key to master
+	
+	}					
+
+	
 }
 
 
-// Station waits until receives challenge message. Parse the data received in this message
-void StationNewSetUp::receiveP2P () {
+/* Station waits until receives challenge message or timeout. Parse the data received.
+Return true if challenge message is received or false if timeout*/
+uint8_t StationNewSetUp::receiveP2P () {
   
 	uint8_t rx_buf [MASTER_TX_BUF_SIZE];// Buffer that will be received
 	uint8_t rx_len;						// Size of data received
 	uint8_t flag;						// Control flag
 
+	uint32_t startTime = millis();
+
 	// Receives challenge message. Doesn't send anything
 	flag = false;
-	while (!flag) {
+	while ( (!flag) && ((millis()-startTime) < (SETUP_TIMEOUT*1000) ) ) {
+
 		if(p2p.P2PTargetInit()){
-			if(p2p.P2PTargetTxRx(0, 0, rx_buf, &rx_len)){  
+			if(p2p.P2PTargetTxRx(0, 0, rx_buf, &rx_len)){ 
+
+				// Copy station ID, challenge and master public key
+				stationID = rx_buf[0];
+				memcpy (challenge, &rx_buf[1], sizeof(challenge));
+				memcpy (masterPk_Shared, &rx_buf[17], sizeof(masterPk_Shared));
+ 
 				flag = true;
+
 			}
 		}
+
 	}
-  
-	stationID = rx_buf[0];				// Station identifier
-	memcpy (challenge, &rx_buf[1], sizeof(challenge));	// Challenge
-	memcpy (masterPk_Shared, &rx_buf[17], sizeof(masterPk_Shared));	// Master public key
+
+	return flag;					// Return true if challenge readed
+
 
 }
 
