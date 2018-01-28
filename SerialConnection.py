@@ -50,7 +50,6 @@ def introMenu (arduino):
 		print "   2. Continue setting up an event"
 		print "   3. Clean card"
 		print "   4. Read card"
-		print "   5. Generate master card"
 		print "   0. Close\n"
 
 		choice = raw_input("Introduce your choice: ")
