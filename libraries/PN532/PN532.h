@@ -2,7 +2,7 @@
 /*
  * PN532 Arduino library
  * Created by Manuel Montenegro, January 24, 2017.
- * Developed for Manuel Montenegro Final Year Project. 
+ * Developed for Manuel Montenegro Bachelor Thesis. 
  * 
  *  This library is used to manage PN532 NFC module.
  *
