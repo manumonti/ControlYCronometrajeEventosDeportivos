@@ -1,7 +1,7 @@
 /*********************************************************************************************/
 /*
  * Players' NFC card management Arduino library
- * Created by Manuel Montenegro, January 26, 2017.
+ * Created by Manuel Montenegro, January 28, 2017.
  * Developed for Manuel Montenegro Bachelor Thesis. 
  * 
  *  This library is used for the management of players' cards. Allows operation like reading
@@ -32,6 +32,8 @@
 
 
 #include <PN532.h>						// NFC Arduino library for manages Mifare cards
+#include <RTClib.h>						// Real Time Clock library
+#include <EEPROM.h>						// Arduino EEPROM management library
 #include <SerialInterface.h>			// Serial communication with PC library
 
 
@@ -44,18 +46,28 @@
 #define PN532_RESET     	3    		// Not connected by default
 #define keyAType        	0			// Defines what mifare key type will be used in auth
 #define keyBType        	1 			// Defines what mifare key type will be used in auth
+#define TIME_SIZE			4			// Size in bytes of clock time
+#define HMAC_SIZE			11			// Size of HMAC in each punch record in user's card	
 #define MIFARE_BLOCK_SIZE	16			// Size of each block on Mifare Classic 1k Card
 #define UID_LENGTH			4			// Length of UID in Mifare Classic 1k cards
+#define NB_CAT_BLOCK		1			// Block number of Next Block and Category in user card
+#define NAME_BLOCK			2			// Block number of User Name in user card
+#define FIRST_PUNCH_BLOCK	4			// Block number of first punch block in user card
+#define ID_STATION_ADDR		0			// Arduino EEPROM
 
 
 class PlayerCard {
 public:
 	PlayerCard ();
-	void format ();						// Formats player card erasing all previous data
-	
+	void begin ();						// Inits the hardware
+	void format ();						// Master formats player card erasing previous data
+
+	// Station puts information about this control point
+	void punch ( );
 
 private:
 	PN532 nfc;							// Object that manages PN532 module
+	RTC_DS3231 rtc;						// Object that manages Real Time Clock
 	SerialInterface usb;				// Serial Interface for communicating by USB port
 
 	// Key B for authenticates sectors of Mifare Classic Card
@@ -63,7 +75,10 @@ private:
 
 	// Reads data in first card's sector
 	void readCardHeader (uint8_t *uid, uint8_t *nb, uint8_t *cat, uint8_t *name );
+
 	void writeCardHeader (uint8_t nb, uint8_t *cat, uint8_t *name);	// Writes card header info
+	void buildPunchRecord ( uint8_t *block );	// Builds the next punch record
+
 
 };
 
