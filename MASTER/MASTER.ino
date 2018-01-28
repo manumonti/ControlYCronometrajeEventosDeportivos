@@ -2,7 +2,7 @@
 /*********************************************************************************************/
 /*
  * MASTER
- * Created by Manuel Montenegro, January 26, 2017.
+ * Created by Manuel Montenegro, January 28, 2017.
  * Developed for Manuel Montenegro Bachelor Thesis. 
  * 
  *  This sketch sets up station devices by NFC. It assignes an identifier (ID) and a shared 
@@ -41,6 +41,7 @@ void loop() {
     setUp.continuePreviousEvent (); // Continues a previous process of setting up
   } else if (userChoice == '3') {
     PlayerCard card;
+    card.begin();
     card.format(); 
   }
 
