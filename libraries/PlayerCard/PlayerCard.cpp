@@ -1,7 +1,7 @@
 /*********************************************************************************************/
 /*
  * Players' NFC card management Arduino library
- * Created by Manuel Montenegro, January 28, 2017.
+ * Created by Manuel Montenegro, January 26, 2017.
  * Developed for Manuel Montenegro Bachelor Thesis. 
  * 
  *  This library is used for the management of players' cards. Allows operation like reading
@@ -24,23 +24,20 @@
 
 
 // Class constructor
-PlayerCard::PlayerCard () : nfc( PN532_IRQ, PN532_RESET ) { }
+PlayerCard::PlayerCard () : nfc( PN532_IRQ, PN532_RESET) {
+	
+	nfc.begin();   						// I2C initialization & resets PN532 module
+  	nfc.SAMConfig();  					// Configures the Secure Access Module of PN532
 
-
-// Inits the PN532 in Mifare card management mode
-void PlayerCard::begin() {
-	nfc.begin();						// I2C initialization & resets PN532 module
-	nfc.SAMConfig();					// Configures the Secure Access Module of PN532
-	rtc.begin();						// Inits Real Time Clock hardware
 }
 
 
-// Master erases previous information of card and set up it for a new event
+// Erases previous information of card and set up it for a new event
 void PlayerCard::format () {
 
 	uint8_t userChoice;					// Choose of user in Serial interface
 	uint8_t uid[7];						// For storing card UID
-	uint8_t nextBlock;
+	uint8_t nextBlock;					// Next block to be written in card
 	uint8_t category [CAT_SIZE];		// Char array with player category
 	uint8_t name [NAME_SIZE];			// Char array with player name
 
@@ -58,84 +55,36 @@ void PlayerCard::format () {
 		usb.receiveName (name);			// Reads new user name
 		usb.receiveCategory (category);	// Reads new user category
 
-		writeCardHeader (FIRST_PUNCH_BLOCK, category, name);	// Writes the Card Header
+		nextBlock = 4;					// In formatted card, first block is 4
+		writeCardHeader (nextBlock, category, name);	// Writes the Card Header
 	
 	} else if (userChoice == '2') {
-
-		writeCardHeader (FIRST_PUNCH_BLOCK, category, name);	// Writes the Card Header
+		
+		nextBlock = 4;					// In formatted card, first block is 4
+		writeCardHeader (nextBlock, category, name);	// Writes the Card Header
 	
 	}
-}
-
-
-/* Station puts a punch record in user card with information about this control point.
-The data saved in card is defined in documentation of this proyect*/
-void PlayerCard::punch ( ) {
-
-	uint8_t uid[7];						// UID of user's card
-	uint8_t uidLength;					// Length of the UID (depends on card type)
-	uint8_t nextCardBlock;				// For storing next card's block for writting
-	uint8_t data[MIFARE_BLOCK_SIZE];	// For storing block data during reads
-	uint8_t success;					// Control flag
-
-	// Waits until a valid card is placed on the reader and return readed UID
-	success = nfc.readPassiveTargetID (PN532_MIFARE_ISO14443A, uid, &uidLength);
-	// Checks if this is a Mifare Classic Card (UID length is 4)
-	if (success && (uidLength == UID_LENGTH)) {
-
-		// Reads what is the next free memory block
-		// Authenticates the block's sector
-		if ( nfc.mifareclassic_AuthenticateBlock (uid, uidLength, NB_CAT_BLOCK, keyBType, keyb) ) {
-			
-			// Reads the data of the block and parse it
-			if ( nfc.mifareclassic_ReadDataBlock(NB_CAT_BLOCK, data) ) {
-				nextCardBlock = data[0];// Saves next memory block number
-				data[0]++;				// Update to next free memory block in card
-				nfc.mifareclassic_WriteDataBlock (NB_CAT_BLOCK, data); // Saves changes
-			}
-		}
-
-		buildPunchRecord(data);			// Takes the punch record information
-
-		// Writes punch in the next free memory block
-		// Authenticates the block's sector
-		if ( nfc.mifareclassic_AuthenticateBlock (uid, uidLength, nextCardBlock, keyBType, keyb) ) {
-			nfc.mifareclassic_WriteDataBlock (nextCardBlock, data);
-
-					Serial.print("Next Card Block: ");
-					Serial.println(nextCardBlock);
-
-					for (int i = 0; i < 16; i++) {
-						Serial.print(data[i],HEX); Serial.print(" ");
-					}
-					Serial.println();
-
-		}
-
-	}
-
-
 }
 
 
 // Reads data in first card's sector: ID, next memory block, category and player name
-void PlayerCard::readCardHeader ( uint8_t *uid, uint8_t *nb, uint8_t *cat, uint8_t *name ) {
+void PlayerCard::readCardHeader (uint8_t *uid, uint8_t *nb, uint8_t *cat, uint8_t *name ) {
 
 	uint8_t uidLength;					// Length of the UID (depends on card type)
 	uint8_t currentblock;				// Counter to keep track of actual block
 	uint8_t success;					// Control flag
 	uint8_t data[MIFARE_BLOCK_SIZE];	// For storing block data during reads
 
+	currentblock = 1;					// First block in read is block #1
+
 	// Waits until a valid card is placed on the reader and return readed UID
 	success = nfc.readPassiveTargetID (PN532_MIFARE_ISO14443A, uid, &uidLength);
 
 	// Checks if this is a Mifare Classic Card (UID length is 4)
 	if (success && (uidLength == UID_LENGTH)) {
 
-		currentblock = NB_CAT_BLOCK;	// First block in read
-
 		// Authenticates the block's sector
-		if ( nfc.mifareclassic_AuthenticateBlock (uid, uidLength, currentblock, keyBType, keyb) ) {
+    	if ( nfc.mifareclassic_AuthenticateBlock (uid, uidLength, currentblock, keyBType, keyb) ) {
 			
 			// Reads the data of the block and parse it
 			if ( nfc.mifareclassic_ReadDataBlock(currentblock, data) ) {
@@ -144,12 +93,9 @@ void PlayerCard::readCardHeader ( uint8_t *uid, uint8_t *nb, uint8_t *cat, uint8
 				for (uint8_t i = 0; i < CAT_SIZE; i++) {
 					cat[i] = data[i+1];	// Saves category char array
 				}
+				currentblock ++;		// Updates to next block to read
 
 			}
-
-			currentblock = NAME_BLOCK;		// Updates to next block to read
-
-			// Reads the data of the block and parse it
 			if ( nfc.mifareclassic_ReadDataBlock(currentblock, data) ) {
 
 				for (uint8_t i = 0; i < NAME_SIZE; i++) {
@@ -172,7 +118,7 @@ void PlayerCard::writeCardHeader (uint8_t nb, uint8_t *cat, uint8_t *name) {
 	uint8_t success;					// Control flag
 	uint8_t data[MIFARE_BLOCK_SIZE];	// For storing block data during reads
 
-	currentBlock = NB_CAT_BLOCK;		// First block in read is block #1
+	currentBlock = 1;					// First block in read is block #1
 
 	// Waits until a valid card is placed on the reader and return readed UID
 	success = nfc.readPassiveTargetID (PN532_MIFARE_ISO14443A, uid, &uidLength);
@@ -196,26 +142,3 @@ void PlayerCard::writeCardHeader (uint8_t nb, uint8_t *cat, uint8_t *name) {
 	}
 
 }
-
-
-/*Builds the punch record with necessary information: ID station, time stamp and HMAC
-More information about punch block format can be found in documentation*/
-void PlayerCard::buildPunchRecord ( uint8_t *block ) {
-
-	uint32_t timeStamp;					// Buffer that will contain time stamp
-
-	// ID of the station that is doing the punch record
-	block[0] = EEPROM.read (ID_STATION_ADDR);
-
-	// HMAC for aunthenticating the punch record
-	memset ( &block[5], 0xFF, HMAC_SIZE );					
-
-	timeStamp = rtc.now().unixtime();
-	memcpy ( &block[1], &timeStamp, TIME_SIZE );
-
-}
-
-
-
-
-
