@@ -53,6 +53,15 @@ def introMenu (arduino):
 		print "   0. Close\n"
 
 		choice = raw_input("Introduce your choice: ")
+
+		if choice == '1':
+			print "This will erase all previous event data"
+			confirmation = raw_input("Type 'yes' if you want to start new event: ")
+			if confirmation == 'yes':
+				arduino.write(bytes(choice))
+			else:
+				return
+
 		arduino.write(bytes(choice))
 
 		ack = arduino.readline().rstrip()
