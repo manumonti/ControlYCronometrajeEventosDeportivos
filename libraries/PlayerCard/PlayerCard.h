@@ -32,6 +32,7 @@
 
 
 #include <PN532.h>						// NFC Arduino library for manages Mifare cards
+#include <BLAKE2s.h>					// Cryptographic Arduino Library for Blake2s
 #include <RTClib.h>						// Real Time Clock library
 #include <EEPROM.h>						// Arduino EEPROM management library
 #include <SerialInterface.h>			// Serial communication with PC library
@@ -46,39 +47,47 @@
 #define PN532_RESET     	3    		// Not connected by default
 #define keyAType        	0			// Defines what mifare key type will be used in auth
 #define keyBType        	1 			// Defines what mifare key type will be used in auth
+#define POLY_NONCE_SIZE		16			// Size in bytes of Nonce in Poly1305
+#define HMAC_KEY_SIZE		32			// Size in bytes of keys used for HMAC
 #define TIME_SIZE			4			// Size in bytes of clock time
-#define HMAC_SIZE			11			// Size of HMAC in each punch record in user's card	
+#define AUTH_IN_CARD_SIZE	11			// Size of HMAC in each punch record in user's card	
 #define MIFARE_BLOCK_SIZE	16			// Size of each block on Mifare Classic 1k Card
 #define UID_LENGTH			4			// Length of UID in Mifare Classic 1k cards
 #define NB_CAT_BLOCK		1			// Block number of Next Block and Category in user card
 #define NAME_BLOCK			2			// Block number of User Name in user card
 #define FIRST_PUNCH_BLOCK	4			// Block number of first punch block in user card
-#define ID_STATION_ADDR		0			// Arduino EEPROM
+#define LAST_PUNCH_BLOCK	62			// Block number of last block that can be written
+#define ID_STATION_ADDR		0			// Arduino EEPROM address where is stored station ID
+#define KEY_EEPROM_ADDR		50			// Arduino EEPROM address where is stored station Key
 
 
 class PlayerCard {
 public:
 	PlayerCard ();
 	void begin ();						// Inits the hardware
-	void format ();						// Master formats player card erasing previous data
+	void format ();						// Master formats player card erasing previous data	
+	void punch ();						// Station puts information about this control point
 
-	// Station puts information about this control point
-	void punch ( );
 
 private:
 	PN532 nfc;							// Object that manages PN532 module
+	BLAKE2s blake;						// Object that manages Blake2s crypto functionalities
 	RTC_DS3231 rtc;						// Object that manages Real Time Clock
 	SerialInterface usb;				// Serial Interface for communicating by USB port
 
 	// Key B for authenticates sectors of Mifare Classic Card
 	const uint8_t keyb [6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
-	// Reads data in first card's sector
+	uint8_t idStation;					// ID of this station loaded from Arduino EEPROM
+	uint8_t stationKey [HMAC_KEY_SIZE];	// Negociated key of this station
+
 	void readCardHeader (uint8_t *uid, uint8_t *nb, uint8_t *cat, uint8_t *name );
-
 	void writeCardHeader (uint8_t nb, uint8_t *cat, uint8_t *name);	// Writes card header info
-	void buildPunchRecord ( uint8_t *block );	// Builds the next punch record
-
+	void buildPunchRecord ( uint8_t currentBlock, uint8_t *lastBlockData, uint8_t *block, uint8_t *uid );	// Builds the next record
+	// Method that generates a message authentication code with blake2s
+	void generateMac (uint8_t *mac, uint8_t uid, uint8_t ids, uint32_t time, uint8_t *lastBlockData );
+	uint8_t nextFreeBlock ( uint8_t cardBlock );// Return the following free block of card
+	uint8_t previousBlock ( uint8_t cardBlock );// Return the last written block
 
 };
 
