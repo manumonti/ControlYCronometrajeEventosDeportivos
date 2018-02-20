@@ -43,6 +43,10 @@ void loop() {
     PlayerCard card;
     card.begin();
     card.format(); 
+  } else if (userChoice == '4') {
+    PlayerCard card;
+    card.begin();
+    card.readPunches();
   }
 
 
