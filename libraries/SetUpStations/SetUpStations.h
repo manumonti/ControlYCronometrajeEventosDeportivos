@@ -36,7 +36,7 @@
 #include <SerialInterface.h>			// Serial communication with PC library
 
 
-#define SETUP_TIMEOUT		30			// Max. time in seconds for start station setup
+#define SETUP_TIMEOUT		5			// Max. time in seconds for start station setup
 #define STRING_TIME_SIZE	8			// Size in bytes of time in format hh:mm:ss
 #define STRING_DATE_SIZE	11			// Size in bytes of date in format mmm dd yyyy
 #define TIME_SIZE			4			// Size in bytes of clock time
