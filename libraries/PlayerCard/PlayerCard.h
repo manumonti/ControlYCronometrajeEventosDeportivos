@@ -66,7 +66,9 @@ public:
 	PlayerCard ();
 	void begin ();						// Inits the hardware
 	void format ();						// Master formats player card erasing previous data	
+	void readPunches ();				// Master reads & validates punches from card
 	void punch ();						// Station puts information about this control point
+
 
 
 private:

@@ -71,6 +71,58 @@ void PlayerCard::format () {
 }
 
 
+
+
+
+// Master reads all the punches in the card and checks its authentication code
+void PlayerCard::readPunches () {
+
+	uint8_t uid[7];						// UID of user's card
+	uint8_t uidLength;					// Length of the UID (depends on card type)
+	uint8_t cardBlock;					// For storing next card's block for writting
+	uint8_t data[MIFARE_BLOCK_SIZE];	// For storing block data during reads
+	uint8_t previousBlockData [MIFARE_BLOCK_SIZE];
+	uint8_t success;					// Control flag
+
+	uint8_t lastBlock;					// Next free block in card
+	uint8_t category [CAT_SIZE];		// Char array with player category
+	uint8_t name [NAME_SIZE];			// Char array with player name
+
+	uint8_t blockPointer;				// Pointer to the next card block to be readed
+
+	readCardHeader(uid, &lastBlock, category, name);// Reads info from card header
+
+	usb.sendHexString(uid,UID_LENGTH);	// Sends the UID of user's card
+	usb.sendString (name);				// Sends user's name
+	usb.sendString (category);			// Sends user's category
+
+
+	blockPointer = FIRST_PUNCH_BLOCK;	// blockPointer starts pointing to first punch block
+
+	while (blockPointer < lastBlock) {	// Reads each punch from card
+
+		// Check if this is a new block so that we can reauthenticate
+		if (nfc.mifareclassic_IsFirstBlock(blockPointer)) {
+
+			// Authenticates sector
+			nfc.mifareclassic_AuthenticateBlock (uid, 4, blockPointer, keyBType, keyb);
+
+			Serial.println("Sector autenticado!");
+
+		}
+
+		Serial.print("Registro: ");
+		Serial.println(blockPointer);
+
+		blockPointer = nextFreeBlock(blockPointer);	// Updates the value of blockPointer
+
+	}
+
+  }
+
+
+
+
 /* Station puts a punch record in user card with information about this control point.
 The data saved in card is defined in documentation of this proyect*/
 void PlayerCard::punch ( ) {
@@ -126,6 +178,86 @@ void PlayerCard::punch ( ) {
 
 	}
 
+
+}
+
+
+
+
+
+/*Builds the punch record with necessary information: ID station, time stamp and HMAC
+More information about punch block format can be found in documentation*/
+void PlayerCard::buildPunchRecord ( uint8_t currentBlock, uint8_t *lastBlockData, uint8_t *block, uint8_t *uid ) {
+
+	uint32_t timeStamp;					// Buffer that will contain time stamp
+	uint8_t mac [AUTH_IN_CARD_SIZE];	// Result of poly authentication
+
+	// ID of the station that is doing the punch record
+	block[0] = idStation;
+
+	// Time stamp of this punch
+	timeStamp = rtc.now().unixtime();
+	memcpy ( &block[1], &timeStamp, TIME_SIZE );	// Time stamp is put in punch
+
+	generateMac (mac, uid, idStation, timeStamp, lastBlockData);
+
+	memcpy ( &block[5], mac, AUTH_IN_CARD_SIZE );
+
+}
+
+
+/* Generates a Message Authentication code for a punch record
+isFirstRecord must be 1 if is the first record or 0 if not*/
+void PlayerCard::generateMac (uint8_t *mac, uint8_t uid, uint8_t ids, uint32_t time, uint8_t *lastBlockData ) {
+
+	// Blake2s for authenticating the punch record
+	blake.reset(stationKey, sizeof(stationKey), AUTH_IN_CARD_SIZE);
+	blake.update(&uid, sizeof(uid));
+	blake.update(&ids, sizeof(ids));
+	blake.update(&time, sizeof(time));
+	blake.update(lastBlockData, MIFARE_BLOCK_SIZE);
+	blake.finalize(mac, AUTH_IN_CARD_SIZE);
+
+}
+
+
+
+// Return the next free block of user's card avoiding sector trailer's blocks
+uint8_t PlayerCard::nextFreeBlock ( uint8_t cardBlock ) {
+
+	if (cardBlock >= LAST_PUNCH_BLOCK){	// Memory full
+
+		return LAST_PUNCH_BLOCK;// Return last card block
+
+	} else if ( ((cardBlock+2) % 4) == 0 ){	// If next block number belong to sector trailer
+
+		return cardBlock + 2;	// Avoiding sector trailer
+
+	} else {
+
+		return cardBlock + 1;	// Next block is ok
+
+	}
+
+}
+
+
+// Return the last written block of user's card avoiding sector trailer's blocks
+uint8_t PlayerCard::previousBlock ( uint8_t cardBlock ) {
+
+	if (cardBlock <= FIRST_PUNCH_BLOCK){// This is the first block
+
+		return NB_CAT_BLOCK;			// Return last card block
+
+	} else if ( (cardBlock % 4) == 0 ){	// If last block number belong to sector trailer
+
+		return cardBlock - 2;			// Avoiding sector trailer
+
+	} else {
+
+		return cardBlock - 1;			// Previous block is ok
+
+	}
 
 }
 
@@ -208,85 +340,6 @@ void PlayerCard::writeCardHeader (uint8_t nb, uint8_t *cat, uint8_t *name) {
 	}
 
 }
-
-
-/*Builds the punch record with necessary information: ID station, time stamp and HMAC
-More information about punch block format can be found in documentation*/
-void PlayerCard::buildPunchRecord ( uint8_t currentBlock, uint8_t *lastBlockData, uint8_t *block, uint8_t *uid ) {
-
-	uint32_t timeStamp;					// Buffer that will contain time stamp
-	uint8_t mac [AUTH_IN_CARD_SIZE];	// Result of poly authentication
-
-	// ID of the station that is doing the punch record
-	block[0] = idStation;
-
-	// Time stamp of this punch
-	timeStamp = rtc.now().unixtime();
-	memcpy ( &block[1], &timeStamp, TIME_SIZE );	// Time stamp is put in punch
-
-	generateMac (mac, uid, idStation, timeStamp, lastBlockData);
-
-	memcpy ( &block[5], mac, AUTH_IN_CARD_SIZE );
-
-}
-
-
-/* Generates a Message Authentication code for a punch record
-isFirstRecord must be 1 if is the first record or 0 if not*/
-void PlayerCard::generateMac (uint8_t *mac, uint8_t uid, uint8_t ids, uint32_t time, uint8_t *lastBlockData ) {
-
-	// Blake2s for authenticating the punch record
-	blake.reset(stationKey, sizeof(stationKey), AUTH_IN_CARD_SIZE);
-	blake.update(&uid, sizeof(uid));
-	blake.update(&ids, sizeof(ids));
-	blake.update(&time, sizeof(time));
-	blake.update(lastBlockData, MIFARE_BLOCK_SIZE);
-	blake.finalize(mac, AUTH_IN_CARD_SIZE);
-
-
-}
-
-
-
-// Return the next free block of user's card avoiding sector trailer's blocks
-uint8_t PlayerCard::nextFreeBlock ( uint8_t cardBlock ) {
-
-	if (cardBlock >= LAST_PUNCH_BLOCK){	// Memory full
-
-		return LAST_PUNCH_BLOCK;// Return last card block
-
-	} else if ( ((cardBlock+2) % 4) == 0 ){	// If next block number belong to sector trailer
-
-		return cardBlock + 2;	// Avoiding sector trailer
-
-	} else {
-
-		return cardBlock + 1;	// Next block is ok
-
-	}
-
-}
-
-
-// Return the last written block of user's card avoiding sector trailer's blocks
-uint8_t PlayerCard::previousBlock ( uint8_t cardBlock ) {
-
-	if (cardBlock <= FIRST_PUNCH_BLOCK){// This is the first block
-
-		return FIRST_PUNCH_BLOCK;		// Return last card block
-
-	} else if ( (cardBlock % 4) == 0 ){	// If last block number belong to sector trailer
-
-		return cardBlock - 2;			// Avoiding sector trailer
-
-	} else {
-
-		return cardBlock - 1;			// Previous block is ok
-
-	}
-
-}
-
 
 
 
