@@ -24,12 +24,13 @@ void setup() {
   
   Serial.begin (115200);            // Sets up serial port baudrate (ONLY FOR DEBUG)  
 
-  while (!Serial);                  // Only for debug
+//  while (!Serial);                  // Only for debug
   
   pinMode(LED_PIN, OUTPUT);         // Set Up digital pin for LED
-  digitalWrite(LED_PIN, HIGH);      // Turn on LED for indicating set up period has started
 
   StationNewSetUp stationSetUp;     // Manages the stations' setup
+  
+  digitalWrite(LED_PIN, HIGH);      // Turn on LED for indicating set up period has started
 
   stationSetUp.startNewSetUp ();    // Starts the process of setting up station
 
