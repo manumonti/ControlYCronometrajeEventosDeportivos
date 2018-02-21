@@ -3,7 +3,7 @@
 #################################################################################
 #                                                                               #
 #	Serial interface with Arduino Python script.                                #
-#	Created by Manuel Montenegro, January 26, 2017.                             #
+#	Created by Manuel Montenegro, February 20, 2018.                            #
 #	Developed for Manuel Montenegro Bachelor Thesis.                            #
 #                                                                               #
 #	This is an early version of user interface for administrators that want     #
@@ -57,9 +57,7 @@ def introMenu (arduino):
 		if choice == '1':
 			print "This will erase all previous event data"
 			confirmation = raw_input("Type 'yes' if you want to start new event: ")
-			if confirmation == 'yes':
-				arduino.write(bytes(choice))
-			else:
+			if confirmation != 'yes':
 				return
 
 		arduino.write(bytes(choice))
@@ -71,7 +69,9 @@ def introMenu (arduino):
 			if choice == '1':
 
 				# Send the time and date
+				time.sleep(0.2)
 				arduino.write(bytes(time.strftime("%b %d %Y")))
+				time.sleep(0.2)
 				arduino.write(bytes(time.strftime("%H:%M:%S")))
 
 				setupMenu(arduino)
@@ -81,6 +81,8 @@ def introMenu (arduino):
 
 			elif choice == '3':
 				formatMenu(arduino)
+			elif choice == '4':
+				readPunchs(arduino)
 
 
 
@@ -90,7 +92,7 @@ def setupMenu (arduino):
 	choice = '1';
 
 	while choice == '1':
-
+		
 		# Read the station ID
 		station = arduino.readline().rstrip()
 
@@ -141,6 +143,39 @@ def formatMenu(arduino):
 		arduino.write(bytes(userName))
 		category = raw_input("Introduce category: ")
 		arduino.write(bytes(category))
+
+
+# Menu for formatting a user card
+def readPunchs(arduino):
+	print "\nPlease, put card on reader\n"
+
+	# Prints data from card
+	uid = arduino.readline().rstrip()
+	userName = arduino.readline().rstrip()
+	category = arduino.readline().rstrip()
+
+	print " --------------------------------"
+	print " User ID: %s" % uid
+	print " Name: %s" % userName
+	print " Category: %s" % category
+	print " --------------------------------"
+	print " "
+	print " IDS 	Punch Time 	Validated?"
+
+	continueWithBlocks = arduino.readline().rstrip()
+
+	while (continueWithBlocks == '1'):
+
+		# Read one punch
+		ids = arduino.readline().rstrip()
+		punchTime = arduino.readline().rstrip()
+		validated = arduino.readline().rstrip()
+
+		print " %s 	%s        %s" % (ids, punchTime, validated)
+
+		continueWithBlocks = arduino.readline().rstrip()
+
+
 
 
 
