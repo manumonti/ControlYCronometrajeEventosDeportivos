@@ -72,7 +72,6 @@ void MasterSetUpStations::continuePreviousEvent () {
 // Sets up each station one by one until user ends the process.
 void MasterSetUpStations::setUpProcess () {
 
-
 	uint8_t choice;						// User's choose
 	uint8_t flag;						// Control flag
 
@@ -146,7 +145,7 @@ uint8_t MasterSetUpStations::sendP2P () {
 /* Master receives station response by P2P NFC. This response should contain station public
 key and a HMAC for validating the information sended and the station public key received*/
 void MasterSetUpStations::receiveP2P() {
-  
+
 	uint8_t rx_buf [MASTER_RX_BUF_SIZE];// Buffer that will be received
 	uint8_t rx_len;						// Size of data received
 	uint8_t flag;						// Control flag
@@ -186,8 +185,16 @@ void MasterSetUpStations::calculateSharedKey() {
 	memcpy (sharedKey, stationPk, sizeof(stationPk));	// Copies station public key.
 	Curve25519::dh2 (sharedKey, masterSk);	// Generates Diffie-Hellman shared key
 
-	// Saves the station key on I2C EEPROM
-	i2cEeprom.write (stationID*STATION_REC_SIZE, sharedKey, STATION_REC_SIZE); 
+				// Serial.print("shared key: ");
+				// for (int i = 0; i < sizeof (sharedKey); i++) {
+				// 	Serial.print (sharedKey [i], HEX);
+				// 	Serial.print (" ");
+				// }
+				// Serial.println();
+
+	uint8_t position = (stationID * STATION_REC_SIZE);
+
+	i2cEeprom.write (position, sharedKey, STATION_REC_SIZE); 
   
 }
 
@@ -196,7 +203,7 @@ void MasterSetUpStations::calculateSharedKey() {
 /* Master calculates HMAC of stationID, challenge & station public key & checks it with 
 receivedHMAC. Return true if calculated HMAC is equal to received or false if it isn't*/
 uint8_t MasterSetUpStations::checkHMAC () {
-  
+
 	uint8_t calculatedHMAC [KEY_SIZE];	// Stores calculated HMAC for checking
 	uint8_t sharedKey [KEY_SIZE];		// Key of the station
   
@@ -254,6 +261,18 @@ void StationNewSetUp::startNewSetUp () {
 		// Calculates the Diffie-Hellman shared key. This will be the station key
 		Curve25519::dh2 (masterPk_Shared, stationSk_HMAC);	// Generates DH key & erases secret key
 		EEPROM.put (STATION_ID_ADDR, stationID);			// Saves in EEPROM the station ID
+		
+
+				// Serial.print("shared key: ");
+				// for (int i = 0; i < sizeof (masterPk_Shared); i++) {
+				// 	Serial.print (masterPk_Shared [i], HEX);
+				// 	Serial.print (" ");
+				// }
+				// Serial.println();
+
+
+
+
 		EEPROM.put (SHARED_KEY_ADDR, masterPk_Shared);		// Saves in EEPROM the shared key
 
 		calculateHMAC ();				// Calculates HMAC & saves it in stationSk_HMAC
@@ -269,7 +288,7 @@ void StationNewSetUp::startNewSetUp () {
 /* Station waits until receives challenge message or timeout. Parse the data received.
 Return true if challenge message is received or false if timeout*/
 uint8_t StationNewSetUp::receiveP2P () {
-  
+
 	uint8_t rx_buf [MASTER_TX_BUF_SIZE];// Buffer that will be received
 	uint8_t rx_len;						// Size of data received
 	uint8_t flag;						// Control flag
@@ -303,7 +322,7 @@ uint8_t StationNewSetUp::receiveP2P () {
 
 // Station calculates HMAC of stationID, challenge & station PK & stores it in stationSk_HMAC
 void StationNewSetUp::calculateHMAC () {
-  
+
 	// Calculating the HMAC. Var stationSk_HMAC is reused because Its empty after DH2 function
 	sha256.resetHMAC(masterPk_Shared, sizeof(masterPk_Shared));	// Inits HMAC process
 	sha256.update(&stationID, sizeof(stationID));				// Introduces station ID
@@ -317,7 +336,7 @@ void StationNewSetUp::calculateHMAC () {
 /* Station sends to Master its public key & calculated HMAC of received data
 for verificates public key*/
 void StationNewSetUp::sendP2P () {
-  
+
 	uint8_t rx_buf [MASTER_TX_BUF_SIZE];// Buffer that will be received
 	uint8_t rx_len;						// Size of data received
 	uint8_t flag;						// Control flag

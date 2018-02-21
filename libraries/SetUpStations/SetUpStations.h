@@ -36,7 +36,7 @@
 #include <SerialInterface.h>			// Serial communication with PC library
 
 
-#define SETUP_TIMEOUT		5			// Max. time in seconds for start station setup
+#define SETUP_TIMEOUT		30			// Max. time in seconds for start station setup
 #define STRING_TIME_SIZE	8			// Size in bytes of time in format hh:mm:ss
 #define STRING_DATE_SIZE	11			// Size in bytes of date in format mmm dd yyyy
 #define TIME_SIZE			4			// Size in bytes of clock time
@@ -49,7 +49,7 @@
 #define RNG_SEED_ADDR		1			// EEPROM address where master & station saves RNGseed
 #define SK_ADDR				50			// EEPROM address where master saves secret key
 #define STATION_ID_ADDR		0			// EEPROM address where station saves its identifier
-#define SHARED_KEY_ADDR		2			// EEPROM address where station saves its shared key
+#define SHARED_KEY_ADDR		50			// EEPROM address where station saves its shared key
 #define I2C_EEPROM_ADDR		0x57		// I2C Address of EEPROM integrated in RTC module
 #define RNG_APP_TAG_MASTER	"master"	// Name unique of master for taking RNG seed
 #define RNG_APP_TAG_STATI	"stati"		// Name unique of station for taking RNG seed
