@@ -1,7 +1,7 @@
 /*********************************************************************************************/
 /*
  * Serial interface Arduino library
- * Created by Manuel Montenegro, January 26, 2017.
+ * Created by Manuel Montenegro, January 26, 2018.
  * Developed for Manuel Montenegro Bachelor Thesis. 
  * 
  *  This library is used for establishing a communication with PC by serial port and allows
@@ -40,6 +40,8 @@ public:
 	void sendChar (uint8_t character);	// Master sends a byte to PC
 	void sendString (uint8_t *string);	// Master sends a string to PC
 	void sendHexString(uint8_t array[], uint8_t len); // Master sends a hex string to PC
+	void sendPunchData (uint8_t ids, uint8_t *punchTime, uint8_t validated); // Show punch
+	void sendContinue (uint8_t continueWithBlocks);	// Send if there are more blocks to show
 
 private:
 

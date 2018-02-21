@@ -1,7 +1,7 @@
 /*********************************************************************************************/
 /*
  * Serial interface Arduino library
- * Created by Manuel Montenegro, January 26, 2017.
+ * Created by Manuel Montenegro, January 26, 2018.
  * Developed for Manuel Montenegro Bachelor Thesis. 
  * 
  *  This library is used for establishing a communication with PC by serial port and allows
@@ -150,3 +150,39 @@ void SerialInterface::sendHexString(uint8_t array[], uint8_t len) {
 
 	Serial.println(buffer);
 }
+
+
+// Master device sends a String with data about a punch
+void SerialInterface::sendPunchData (uint8_t ids, uint8_t *punchTime, uint8_t validated) {
+	Serial.println (ids);
+	if (punchTime[0] < 10) {
+		Serial.print("0");
+	}
+	Serial.print (punchTime[0]);
+	Serial.print (":");
+	if (punchTime[1] < 10) {
+		Serial.print("0");
+	}
+	Serial.print (punchTime[1]);
+	Serial.print (":");
+	if (punchTime[2] < 10) {
+		Serial.print("0");
+	}
+	Serial.print (punchTime[2]);
+	Serial.println ();
+
+	if (validated) {
+		Serial.println ("Validated!");
+	} else {
+		Serial.println ("Error!");
+	}
+}
+
+// Send if there are more blocks to show
+void SerialInterface::sendContinue (uint8_t continueWithBlocks) {
+	if (continueWithBlocks) {
+		Serial.println('1');
+	} else {
+		Serial.println('0');
+	}
+}	
