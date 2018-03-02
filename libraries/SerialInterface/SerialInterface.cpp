@@ -172,7 +172,7 @@ void SerialInterface::sendPunchData (uint8_t ids, uint8_t *punchTime, uint8_t va
 	Serial.println ();
 
 	if (validated) {
-		Serial.println ("Validated!");
+		Serial.println ("Ok!");
 	} else {
 		Serial.println ("Error!");
 	}
