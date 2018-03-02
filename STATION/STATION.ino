@@ -1,10 +1,10 @@
 /*********************************************************************************************/
 /*
  * STATION
- * Created by Manuel Montenegro, January 28, 2018.
+ * Created by Manuel Montenegro, February 26, 2018.
  * Developed for Manuel Montenegro Bachelor Thesis. 
  * 
- *  This sketch manages each station of the platform.
+ *  This sketch manages each 1station of the platform.
  * 
  *  Serial port is only for debug. Serial port baudrate: 115200
  *  
@@ -16,7 +16,7 @@
 #include <PlayerCard.h>             // User's card management library
 
 #define LED_PIN           9         // Digital Pin where is tied LED
-#define CARD_TIMEOUT      2         // Number of seconds between punch
+#define CARD_TIMEOUT      1         // Number of seconds between punch
 
 PlayerCard card;                    // Manages operation with user cards
 
@@ -29,7 +29,7 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);         // Set Up digital pin for LED
 
   StationNewSetUp stationSetUp;     // Manages the stations' setup
-  
+
   digitalWrite(LED_PIN, HIGH);      // Turn on LED for indicating set up period has started
 
   stationSetUp.startNewSetUp ();    // Starts the process of setting up station
