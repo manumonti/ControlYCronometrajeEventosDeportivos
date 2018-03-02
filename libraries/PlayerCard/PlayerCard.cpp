@@ -240,6 +240,66 @@ void PlayerCard::punch ( ) {
 }
 
 
+/* Station puts a punch record in user card with information about this control point.
+The data saved in card is defined in documentation of this proyect*/
+bool PlayerCard::punch (uint8_t *data, uint8_t *uid) {
+
+	// uint8_t uid[7];						// UID of user's card
+	uint8_t uidLength;					// Length of the UID (depends on card type)
+	uint8_t cardBlock;					// For storing next card's block for writting
+	// uint8_t data[MIFARE_BLOCK_SIZE];	// For storing block data during reads
+	uint8_t previousBlockData [MIFARE_BLOCK_SIZE];
+	uint8_t success;					// Control flag
+
+	// Waits until a valid card is placed on the reader and return readed UID
+	success = nfc.readPassiveTargetID (PN532_MIFARE_ISO14443A, uid, &uidLength);
+	// Checks if this is a Mifare Classic Card (UID length is 4)
+	if (success && (uidLength == UID_LENGTH)) {
+
+		// Reads what is the next free memory block
+		// Authenticates the block's sector
+		if ( nfc.mifareclassic_AuthenticateBlock (uid, uidLength, NB_CAT_BLOCK, keyBType, keyb) ) {
+			
+			// Reads the data of the block and parse it
+			if ( nfc.mifareclassic_ReadDataBlock(NB_CAT_BLOCK, data) ) {
+
+				cardBlock = data[0];	// Saves next memory block number
+				data[0] = nextFreeBlock (cardBlock); // Updates to next free block in card
+				nfc.mifareclassic_WriteDataBlock (NB_CAT_BLOCK, data); // Saves changes in card
+
+			}
+
+
+			if ( nfc.mifareclassic_AuthenticateBlock (uid, uidLength, previousBlock (cardBlock), keyBType, keyb) ) {
+		
+				// Reads the data of the block and parse it
+				if ( nfc.mifareclassic_ReadDataBlock(previousBlock (cardBlock), previousBlockData) ) {
+
+					/* This is necessary because NB# change along punches. So this must be
+						constant for doing authentication */
+					if (cardBlock == FIRST_PUNCH_BLOCK) {
+						previousBlockData[0] = 0;
+					}
+
+					buildPunchRecord(cardBlock, previousBlockData, data, uid);	// Takes the punch record information
+
+					// Writes punch in the next free memory block
+					// Authenticates the block's sector
+					if ( nfc.mifareclassic_AuthenticateBlock (uid, uidLength, cardBlock, keyBType, keyb) ) {
+						
+						nfc.mifareclassic_WriteDataBlock (cardBlock, data);
+
+						return true;
+
+					}
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 
 
 

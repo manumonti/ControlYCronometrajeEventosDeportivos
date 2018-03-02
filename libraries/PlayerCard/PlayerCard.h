@@ -39,13 +39,13 @@
 #include <AT24CX.h>						// I2C EEPROM in RTC module management library
 
 
-#ifdef ARDUINO_AVR_UNO
-	#define PN532_IRQ   	2			// With Arduino UNO IRQ is tied to digital pin 2
-#elif ARDUINO_AVR_LEONARDO
+#ifdef ARDUINO_AVR_LEONARDO
 	#define PN532_IRQ   	10			// With Arduino Leonardo IRQ is tied to digital pin 10
+#else
+	#define PN532_IRQ   	2			// With others, IRQ is tied to digital pin 2
 #endif
 
-#define PN532_RESET     	3    		// Not connected by default
+#define PN532_RESET     	12    		// Not connected by default
 #define keyAType        	0			// Defines what mifare key type will be used in auth
 #define keyBType        	1 			// Defines what mifare key type will be used in auth
 #define POLY_NONCE_SIZE		16			// Size in bytes of Nonce in Poly1305
@@ -71,6 +71,7 @@ public:
 	void format ();						// Master formats player card erasing previous data	
 	void readPunches ();				// Master reads & validates punches from card
 	void punch ();						// Station puts information about this control point
+	bool punch (uint8_t *data, uint8_t *uid);
 
 
 
