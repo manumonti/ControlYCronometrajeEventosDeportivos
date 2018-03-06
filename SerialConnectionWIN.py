@@ -21,7 +21,7 @@ import sys
 def main():
 
 	# Serial connection with Arduino parameters
-	port = '/dev/cu.usbmodem1431'
+	port = 'COM14'
 	baudrate = 115200
 
 	# Starts the serial connection
