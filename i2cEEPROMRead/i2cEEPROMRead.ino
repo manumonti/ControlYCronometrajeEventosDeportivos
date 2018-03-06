@@ -12,7 +12,7 @@ byte value;
 void setup() {
 
   i2cEeprom=AT24C32(I2C_EEPROM_ADDR);  // Inits I2C EEPROM in RTC module in I2C address
-  Serial.begin(115200);
+  Serial.begin(9600);
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
