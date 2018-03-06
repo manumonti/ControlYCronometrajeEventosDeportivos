@@ -112,10 +112,19 @@ bool SodaqNBIoT::sendPunch (uint8_t *data, uint8_t *idUser, int sock, String ip,
 	message += String(data[0]);
 
 	message += " | Time: ";
+	if (dateTime.hour() < 10) {
+		message += " ";
+	}
 	message += String(dateTime.hour());
 	message += ":";
+	if (dateTime.minute() < 10) {
+		message += "0";
+	}
 	message += String(dateTime.minute());
 	message += ":";
+	if (dateTime.second() < 10) {
+		message += "0";
+	}
 	message += String(dateTime.second());
 
 	atCommand +="AT+NSOST=";
