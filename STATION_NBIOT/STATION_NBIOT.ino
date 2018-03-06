@@ -23,7 +23,7 @@
 #define CARD_TIMEOUT      1         // Number of seconds between punch
 #define MIFARE_BLOCK_SIZE 16        // Size of each block on Mifare Classic 1k Card
 
-String SERVER_IP = "79.114.88.15";  // IP of UDP server
+String SERVER_IP = "79.115.226.197";  // IP of UDP server
 String SERVER_PORT = "16666";       // Port of UDP server
 
 PlayerCard card;                    // Manages operation with user cards
