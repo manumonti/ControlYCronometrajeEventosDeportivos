@@ -13,7 +13,8 @@
 #define UBLOX Serial1
 
 #else
-#error "Please select a Sodaq ExpLoRer, Arduino Leonardo or add your board."
+#define USB Serial
+#define UBLOX Serial3
 #endif
 
 // Pin to turn on/off the nb-iot module
@@ -46,10 +47,6 @@ void loop()
     USB.write(UBLOX.read());
   }
 
-  // check if the USB virtual serial wants a new baud rate
-  if (USB.baud() != baud) {
-    baud = USB.baud();
-       UBLOX.begin(baud);
-  }
+
 
 }
